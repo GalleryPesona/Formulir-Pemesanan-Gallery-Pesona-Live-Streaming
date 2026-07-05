@@ -169,6 +169,17 @@
   .action-row{display:flex; gap:10px; flex-wrap:wrap;}
   .list-card{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; gap:12px; flex-wrap:wrap;}
   .inv-actions-mobile{display:none;}
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;}
+  .stat-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px;}
+  .stat-card .stat-label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;}
+  .stat-card .stat-value{font-size:23px; font-weight:700; color:var(--ivory); font-family:'JetBrains Mono',monospace;}
+  .stat-card.masuk .stat-value{color:var(--success);}
+  .stat-card.keluar .stat-value{color:var(--danger);}
+  .stat-card.saldo .stat-value{color:var(--gold-soft);}
+  .kas-badge{font-size:11px; padding:3px 9px; border-radius:20px; font-family:'JetBrains Mono',monospace; font-weight:700;}
+  .kas-badge.masuk{background:rgba(31,122,84,0.14); color:var(--success);}
+  .kas-badge.keluar{background:rgba(192,57,43,0.12); color:var(--danger);}
+  .kas-badge.auto{background:var(--surface-alt); color:var(--gold-soft); margin-left:6px;}
   @media (max-width:800px){
     .invoice-view .ihead{padding:16px; gap:10px;}
     .invoice-view .ibody{padding:16px;}
@@ -226,6 +237,7 @@
     .main h2{font-size:19px;}
     .sub{margin-bottom:18px;}
     .row2{grid-template-columns:1fr;}
+    .stat-grid{grid-template-columns:1fr;}
     table{font-size:12.5px;}
     th, td{padding:9px 8px;}
   }
@@ -471,6 +483,32 @@ async function getAllInvoices(){
   const items = await Promise.all(keys.map(k => sGet(k)));
   return items.filter(Boolean).sort((a,b)=> b.createdAt - a.createdAt).map(cacheInvoice);
 }
+async function getAllKas(){
+  const keys = await sList('kas:');
+  const items = await Promise.all(keys.map(k => sGet(k)));
+  return items.filter(Boolean).sort((a,b)=> (b.tanggal||'').localeCompare(a.tanggal||'') || b.createdAt - a.createdAt);
+}
+/* Menyinkronkan transaksi kas otomatis dari status invoice (lunas = tercatat sebagai uang masuk) */
+async function syncKasFromInvoice(inv){
+  if(!inv || !inv.id) return;
+  const kasId = 'auto-' + inv.id;
+  if(inv.status === 'lunas'){
+    const existing = await sGet('kas:'+kasId);
+    const entry = {
+      id: kasId,
+      type: 'masuk',
+      jumlah: Number(inv.harga)||0,
+      tanggal: existing ? existing.tanggal : new Date().toISOString().slice(0,10),
+      keterangan: `Pelunasan Invoice ${inv.id}${inv.booking && inv.booking.nama ? ' — '+inv.booking.nama : ''}`,
+      sumber: 'invoice',
+      invoiceId: inv.id,
+      createdAt: existing ? existing.createdAt : Date.now()
+    };
+    await sSet('kas:'+kasId, entry);
+  } else {
+    await sDelete('kas:'+kasId);
+  }
+}
 
 /* ============ ROUTER ============ */
 window.addEventListener('hashchange', render);
@@ -679,6 +717,7 @@ function renderAdmin(){
         <button class="navbtn ${adminTab==='bookings'?'active':''}" data-tab="bookings">📋 Data Pemesanan</button>
         <button class="navbtn ${adminTab==='calendar'?'active':''}" data-tab="calendar">📅 Kalender</button>
         <button class="navbtn ${adminTab==='invoice'?'active':''}" data-tab="invoice">🧾 Invoice</button>
+        <button class="navbtn ${adminTab==='keuangan'?'active':''}" data-tab="keuangan">💰 Keuangan</button>
         <a href="#/" class="navbtn" style="text-decoration:none;">➕ Pemesanan</a>
         <button class="navbtn ${adminTab==='settings'?'active':''}" data-tab="settings">⚙️ Pengaturan</button>
       </div>
@@ -688,6 +727,7 @@ function renderAdmin(){
           <option value="bookings" ${adminTab==='bookings'?'selected':''}>📋 Data Pemesanan</option>
           <option value="calendar" ${adminTab==='calendar'?'selected':''}>📅 Kalender</option>
           <option value="invoice" ${adminTab==='invoice'?'selected':''}>🧾 Invoice</option>
+          <option value="keuangan" ${adminTab==='keuangan'?'selected':''}>💰 Keuangan</option>
           <option value="booking-form">➕ Pemesanan</option>
           <option value="settings" ${adminTab==='settings'?'selected':''}>⚙️ Pengaturan</option>
         </select>
@@ -710,6 +750,7 @@ function renderAdmin(){
   if(adminTab==='bookings') renderBookingsTab(mainArea);
   else if(adminTab==='calendar') renderCalendarTab(mainArea);
   else if(adminTab==='invoice') renderInvoiceTab(mainArea);
+  else if(adminTab==='keuangan') renderKeuanganTab(mainArea);
   else renderSettingsTab(mainArea);
 }
 
@@ -750,10 +791,13 @@ function armDelete(btn, kind, id){
   }
 }
 async function doDelete(kind, id){
-  await sDelete((kind==='booking' ? 'booking:' : 'invoice:') + id);
-  toast(kind==='booking' ? 'Pemesanan dihapus.' : 'Invoice dihapus.');
+  const prefix = kind==='booking' ? 'booking:' : kind==='kas' ? 'kas:' : 'invoice:';
+  await sDelete(prefix + id);
+  if(kind==='invoice') await sDelete('kas:auto-'+id);
+  toast(kind==='booking' ? 'Pemesanan dihapus.' : kind==='kas' ? 'Transaksi dihapus.' : 'Invoice dihapus.');
   if(kind==='booking' && editingBookingId===id) editingBookingId = null;
   if(kind==='invoice' && editingInvoiceId===id) editingInvoiceId = null;
+  if(kind==='kas' && editingKasId===id) editingKasId = null;
   renderAdmin();
 }
 
@@ -1006,6 +1050,7 @@ async function renderInvoiceTab(mount){
       const updated = Object.assign({}, editingInv, { layanan, harga: Number(harga), status, catatan, qris: qrisBase64, booking, rekeningIds, rekening: rekeningSnapshot });
       await sSet('invoice:'+editingInv.id, updated);
       cacheInvoice(updated);
+      await syncKasFromInvoice(updated);
       toast('Invoice diperbarui.');
       editingInvoiceId = null;
       renderInvoicePreview(updated);
@@ -1014,6 +1059,7 @@ async function renderInvoiceTab(mount){
       const invoice = { id: invId, bookingId, booking, layanan, harga: Number(harga), status, catatan, qris: qrisBase64, rekeningIds, rekening: rekeningSnapshot, createdAt: Date.now() };
       await sSet('invoice:'+invId, invoice);
       cacheInvoice(invoice);
+      await syncKasFromInvoice(invoice);
       toast('Invoice berhasil dibuat.');
       renderInvoicePreview(invoice);
     }
@@ -1069,7 +1115,8 @@ async function toggleInvoiceStatus(id){
   inv.status = inv.status==='lunas' ? 'belum_lunas' : 'lunas';
   await sSet('invoice:'+id, inv);
   cacheInvoice(inv);
-  toast(inv.status==='lunas' ? 'Invoice ditandai Lunas.' : 'Invoice ditandai Belum Lunas.');
+  await syncKasFromInvoice(inv);
+  toast(inv.status==='lunas' ? 'Invoice ditandai Lunas & tercatat di Keuangan.' : 'Invoice ditandai Belum Lunas, dihapus dari Keuangan.');
   renderAdmin();
 }
 async function reopenInvoice(id){ const inv = await sGet('invoice:'+id); if(inv){ cacheInvoice(inv); renderInvoicePreview(inv); } }
@@ -1123,6 +1170,120 @@ function renderInvoicePreview(inv){
     <div id="waFallback_${inv.id}"></div>
   `;
 }
+/* ---- Tab: Keuangan ---- */
+let editingKasId = null;
+let kasSearchQuery = '';
+function editKas(id){ editingKasId = id; renderAdmin(); }
+function cancelEditKas(){ editingKasId = null; renderAdmin(); }
+function filterKas(items, q){
+  if(!q) return items;
+  const s = q.toLowerCase();
+  return items.filter(k => [k.keterangan, k.type==='masuk'?'masuk':'keluar', k.sumber==='invoice'?'invoice otomatis':'manual']
+    .some(v => (v||'').toString().toLowerCase().includes(s)));
+}
+async function renderKeuanganTab(mount){
+  mount.innerHTML = `<h2>Keuangan</h2><p class="sub">Catat uang masuk &amp; keluar. Invoice yang ditandai Lunas otomatis tercatat sebagai uang masuk.</p><div id="kasArea">Memuat…</div>`;
+  const items = await getAllKas();
+  const area = document.getElementById('kasArea');
+  const editingKas = editingKasId ? items.find(k=>k.id===editingKasId) : null;
+
+  const totalMasuk = items.filter(k=>k.type==='masuk').reduce((sum,k)=>sum+Number(k.jumlah||0),0);
+  const totalKeluar = items.filter(k=>k.type==='keluar').reduce((sum,k)=>sum+Number(k.jumlah||0),0);
+  const saldo = totalMasuk - totalKeluar;
+
+  area.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card masuk"><div class="stat-label">Total Uang Masuk</div><div class="stat-value">${fmtIDR(totalMasuk)}</div></div>
+      <div class="stat-card keluar"><div class="stat-label">Total Uang Keluar</div><div class="stat-value">${fmtIDR(totalKeluar)}</div></div>
+      <div class="stat-card saldo"><div class="stat-label">Total Saldo</div><div class="stat-value">${fmtIDR(saldo)}</div></div>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        ${editingKas ? `<div class="eyebrow" style="color:var(--gold);">Mengedit transaksi</div>` : ''}
+        <div class="row2">
+          <div>
+            <label>Jenis Transaksi</label>
+            <select id="kas_type">
+              <option value="masuk" ${editingKas && editingKas.type==='masuk' ? 'selected':''}>Uang Masuk</option>
+              <option value="keluar" ${editingKas && editingKas.type==='keluar' ? 'selected':''}>Uang Keluar</option>
+            </select>
+          </div>
+          <div>
+            <label>Jumlah (Rp)</label>
+            <input type="number" id="kas_jumlah" placeholder="Contoh: 200000" value="${editingKas ? editingKas.jumlah : ''}">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Tanggal</label>
+            <input type="date" id="kas_tanggal" value="${editingKas ? editingKas.tanggal : new Date().toISOString().slice(0,10)}">
+          </div>
+          <div>
+            <label>Keterangan</label>
+            <input type="text" id="kas_keterangan" placeholder="Contoh: Beli baterai kamera" value="${editingKas ? (editingKas.keterangan||'').replace(/"/g,'&quot;') : ''}">
+          </div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="createKasBtn">${editingKas ? 'Simpan Perubahan' : 'Tambah Transaksi'}</button>
+          ${editingKas ? `<button class="btn btn-ghost" onclick="cancelEditKas()">Batal</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <h3 style="margin:28px 0 14px; font-size:15px; color:var(--muted);">Riwayat Transaksi</h3>
+    <div style="margin-bottom:14px;"><input type="text" id="kasSearchInput" placeholder="Cari keterangan, jenis, atau sumber…" value="${kasSearchQuery.replace(/"/g,'&quot;')}"></div>
+    <div id="kasList">${items.length===0 ? `<div class="empty">Belum ada transaksi keuangan.</div>` : ''}</div>
+  `;
+  window._allKas = items;
+  const kasSearchInput = document.getElementById('kasSearchInput');
+  kasSearchInput.addEventListener('input', ()=>{
+    kasSearchQuery = kasSearchInput.value;
+    renderKasHistory(window._allKas, filterKas(window._allKas, kasSearchQuery));
+  });
+  document.getElementById('createKasBtn').addEventListener('click', async ()=>{
+    const type = document.getElementById('kas_type').value;
+    const jumlah = document.getElementById('kas_jumlah').value;
+    const tanggal = document.getElementById('kas_tanggal').value;
+    const keterangan = document.getElementById('kas_keterangan').value.trim();
+    if(!jumlah || Number(jumlah)<=0 || !tanggal || !keterangan){ toast('Mohon lengkapi jumlah, tanggal, dan keterangan.'); return; }
+    if(editingKas){
+      const updated = Object.assign({}, editingKas, { type, jumlah: Number(jumlah), tanggal, keterangan });
+      await sSet('kas:'+editingKas.id, updated);
+      toast('Transaksi diperbarui.');
+      editingKasId = null;
+    } else {
+      const id = 'M-' + uid();
+      const entry = { id, type, jumlah: Number(jumlah), tanggal, keterangan, sumber: 'manual', createdAt: Date.now() };
+      await sSet('kas:'+id, entry);
+      toast('Transaksi berhasil ditambahkan.');
+    }
+    renderAdmin();
+  });
+  renderKasHistory(items, filterKas(items, kasSearchQuery));
+}
+function renderKasHistory(allItems, items){
+  if(items === undefined) items = allItems;
+  const listEl = document.getElementById('kasList');
+  if(!listEl) return;
+  if(allItems.length===0){ listEl.innerHTML = `<div class="empty">Belum ada transaksi keuangan.</div>`; return; }
+  if(items.length===0){ listEl.innerHTML = `<div class="empty">Tidak ada transaksi yang cocok.</div>`; return; }
+  const isAuto = k => k.sumber === 'invoice';
+  listEl.innerHTML = items.map(k=>`
+    <div class="card list-card" style="margin-bottom:10px;">
+      <div>
+        <span class="kas-badge ${k.type}">${k.type==='masuk' ? '↑ Masuk' : '↓ Keluar'}</span>${isAuto(k) ? `<span class="kas-badge auto">Otomatis · Invoice</span>` : ''}<br>
+        <b style="display:inline-block; margin-top:6px;">${k.keterangan}</b><br>
+        <span style="color:var(--muted); font-size:13px;">${fmtIDR(k.jumlah)} · ${fmtDate(k.tanggal)}</span>
+      </div>
+      <div class="action-row" style="flex-shrink:0;">
+        ${isAuto(k) ? `<span class="sub" style="margin:0; font-size:12.5px;">Kelola dari tab Invoice</span>` : `
+        <button class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;" onclick="editKas('${k.id}')">Edit</button>
+        <button class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;" onclick="armDelete(this,'kas','${k.id}')">Hapus</button>
+        `}
+      </div>
+    </div>
+  `).join('');
+}
+
 /* ---- Rekening Pembayaran (CRUD) ---- */
 let editingRekeningId = null;
 
