@@ -180,6 +180,30 @@
   .kas-badge.masuk{background:rgba(31,122,84,0.14); color:var(--success);}
   .kas-badge.keluar{background:rgba(192,57,43,0.12); color:var(--danger);}
   .kas-badge.auto{background:var(--surface-alt); color:var(--gold-soft); margin-left:6px;}
+  .booking-cards-mobile{display:none;}
+  .booking-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin-bottom:10px; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+  }
+  .booking-card:active{border-color:var(--gold);}
+  .booking-card .bc-main b{display:block; font-size:14.5px; color:var(--ivory);}
+  .booking-card .bc-main span{font-size:12.5px; color:var(--muted);}
+  .booking-card .bc-arrow{color:var(--muted); font-size:20px; flex-shrink:0;}
+  .detail-overlay{
+    position:fixed; inset:0; background:rgba(15,42,74,0.5); display:flex;
+    align-items:flex-end; justify-content:center; z-index:100;
+  }
+  .detail-sheet{
+    background:var(--surface); width:100%; max-width:480px; border-radius:18px 18px 0 0;
+    padding:22px 20px 26px; max-height:85vh; overflow-y:auto;
+    box-shadow:0 -10px 40px rgba(0,0,0,.25);
+  }
+  .detail-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+  .detail-head h3{font-size:16px; margin:0;}
+  .detail-row{display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .detail-row span:first-child{color:var(--muted); flex-shrink:0;}
+  .detail-row span:last-child{text-align:right;}
   @media (max-width:800px){
     .invoice-view .ihead{padding:16px; gap:10px;}
     .invoice-view .ibody{padding:16px;}
@@ -240,6 +264,8 @@
     .stat-grid{grid-template-columns:1fr;}
     table{font-size:12.5px;}
     th, td{padding:9px 8px;}
+    .booking-table-wrap{display:none;}
+    .booking-cards-mobile{display:block;}
   }
   @media (max-width:480px){
     .main{padding:14px 10px;}
@@ -860,6 +886,7 @@ function renderBookingsList(bookings){
   if(!list) return;
   if(bookings.length===0){ list.innerHTML = `<div class="empty">Tidak ada pemesanan yang cocok.</div>`; return; }
   list.innerHTML = `
+    <div class="booking-table-wrap">
     <table>
       <thead><tr><th>ID Booking</th><th>Nama</th><th>Nomor WA</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Jam</th><th>Catatan</th><th>Diterima</th><th colspan="3"></th></tr></thead>
       <tbody>
@@ -881,7 +908,55 @@ function renderBookingsList(bookings){
         `).join('')}
       </tbody>
     </table>
+    </div>
+    <div class="booking-cards-mobile">
+      ${bookings.map(b=>`
+        <div class="booking-card" onclick="showBookingDetail('${b.id}')">
+          <div class="bc-main">
+            <b>${b.nama}</b>
+            <span>${fmtDate(b.tanggal)} · ${b.noWa || '-'}</span>
+          </div>
+          <div class="bc-arrow">›</div>
+        </div>
+      `).join('')}
+    </div>
   `;
+  window._visibleBookings = bookings;
+}
+function showBookingDetail(id){
+  const b = (window._visibleBookings||[]).find(x=>x.id===id);
+  if(!b) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'detail-overlay';
+  overlay.id = 'bookingDetailOverlay';
+  overlay.innerHTML = `
+    <div class="detail-sheet">
+      <div class="detail-head">
+        <h3>Detail Pemesanan</h3>
+        <button class="btn btn-ghost" style="padding:6px 10px;" onclick="closeBookingDetail()">✕</button>
+      </div>
+      <div class="detail-row"><span>ID Booking</span><span class="tag">${b.code || b.id}</span></div>
+      <div class="detail-row"><span>Nama</span><span>${b.nama}</span></div>
+      <div class="detail-row"><span>Nomor WA</span><span>${b.noWa || '-'}</span></div>
+      <div class="detail-row"><span>Event</span><span>${b.isiEvent || '-'}</span></div>
+      <div class="detail-row"><span>Tempat</span><span>${b.tempat}</span></div>
+      <div class="detail-row"><span>Tanggal</span><span>${fmtDate(b.tanggal)}</span></div>
+      <div class="detail-row"><span>Jam</span><span>${b.jamEvent || '-'}</span></div>
+      <div class="detail-row"><span>Catatan</span><span>${b.catatan || '-'}</span></div>
+      <div class="detail-row"><span>Diterima</span><span>${new Date(b.createdAt).toLocaleDateString('id-ID')}</span></div>
+      <div class="action-row" style="margin-top:18px;">
+        <button class="btn btn-ghost" onclick="closeBookingDetail(); jumpToInvoice('${b.id}')">Invoice</button>
+        <button class="btn btn-ghost" onclick="closeBookingDetail(); editBooking('${b.id}')">Edit</button>
+        <button class="btn btn-ghost" onclick="if(confirm('Hapus pemesanan ini? Tindakan ini tidak dapat dibatalkan.')){ closeBookingDetail(); doDelete('booking','${b.id}'); }">Hapus</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeBookingDetail(); });
+  document.body.appendChild(overlay);
+}
+function closeBookingDetail(){
+  const el = document.getElementById('bookingDetailOverlay');
+  if(el) el.remove();
 }
 function jumpToInvoice(bookingId){ adminTab='invoice'; renderAdmin(); setTimeout(()=>{ const sel=document.getElementById('inv_booking'); if(sel){ sel.value=bookingId; sel.dispatchEvent(new Event('change')); } }, 60); }
 
