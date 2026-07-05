@@ -4,1174 +4,202 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gallery Pesona — Live Streaming Event</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAKACAYAAAAMzckjAAEAAElEQVR42uzdd5xcVdkH8N9zzr1TdjcbAgkJvYMmgAUFBJWmgtjLjAUQlSYI8gKiIsjsCIoKggiCFEVBBGf0RSw[...]
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swa[...]
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#FFFFFF;
-    --surface:#FFFFFF;
-    --surface-alt:#EAF3FC;
-    --line: rgba(30,64,143,0.14);
-    --gold:#2563EB;
-    --gold-soft:#1E4FBF;
-    --ivory:#0F2A4A;
-    --muted:#5C7A9C;
-    --rose:#2563EB;
-    --success:#1F7A54;
-    --danger:#C0392B;
-    --radius: 14px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background: radial-gradient(circle at 20% -10%, #FFFFFF 0%, #F2F7FD 55%);
-    color:var(--ivory);
-    font-family:'Inter', sans-serif;
-    min-height:100vh;
-  }
-  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
-  .eyebrow{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-    color:var(--gold);
-  }
-  a{color:var(--gold-soft);}
-  button{font-family:'Inter',sans-serif; cursor:pointer; border:none;}
-  input, textarea, select{
-    font-family:'Inter', sans-serif;
-    background:var(--surface-alt);
-    border:1px solid var(--line);
-    color:var(--ivory);
-    border-radius:10px;
-    padding:11px 13px;
-    font-size:14.5px;
-    width:100%;
-    outline:none;
-    transition: border-color .15s;
-  }
-  input:focus, textarea:focus, select:focus{border-color:var(--gold);}
-  label{font-size:13px; color:var(--muted); margin-bottom:6px; display:block;}
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    padding:12px 22px; border-radius:10px; font-weight:600; font-size:14.5px;
-    transition: transform .12s, box-shadow .12s;
-  }
-  .btn:active{transform:scale(0.98);}
-  .btn-primary{background:var(--gold); color:#FFFFFF;}
-  .btn-primary:hover{box-shadow:0 6px 20px rgba(37,99,235,0.35);}
-  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ivory);}
-  .btn-ghost:hover{border-color:var(--gold);}
-  .btn-danger{background:transparent; border:1px solid var(--danger); color:var(--danger);}
-  .wrap{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
-  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:28px;}
-
-  /* ---------- Ticket / pass motif (signature element) ---------- */
-  .pass{
-    position:relative;
-    background:var(--surface);
-    border-radius:var(--radius);
-    border:1px solid var(--line);
-    overflow:hidden;
-  }
-  .pass::before{
-    content:"";
-    position:absolute; left:0; right:0; top:64px;
-    height:0; border-top:2px dashed rgba(37,99,235,0.35);
-  }
-  .pass::after{
-    content:"";
-    position:absolute; left:-11px; top:53px; width:22px; height:22px;
-    background:var(--bg); border-radius:50%;
-    box-shadow: 1040px 0 0 var(--bg);
-  }
-  .pass-head{
-    padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
-  }
-  .pass-body{padding:34px 28px 28px;}
-
-  /* ---------- Header ---------- */
-  header.top{
-    display:flex; align-items:center; justify-content:space-between;
-    max-width:1080px; margin:0 auto; padding:26px 20px 0;
-  }
-  .brand{display:flex; align-items:center; gap:12px;}
-  .brand .mark{
-    width:40px; height:40px; border-radius:10px;
-    object-fit:contain; display:block; background:transparent;
-  }
-  .brand-name{font-size:15px; letter-spacing:.02em;}
-  .brand-name b{color:var(--gold-soft); font-weight:600;}
-
-  /* ---------- Form page ---------- */
-  .hero{padding:52px 0 30px; text-align:center;}
-  .hero h1{font-size:clamp(30px,4vw,44px); line-height:1.15;}
-  .hero p{color:var(--muted); max-width:480px; margin:14px auto 0; font-size:15px;}
-  .form-grid{display:grid; gap:18px; margin-top:8px;}
-  .row2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  @media (max-width:560px){.row2{grid-template-columns:1fr;}}
-  .foot-note{font-size:12.5px; color:var(--muted); text-align:center; margin-top:18px;}
-
-  .confirm-num{font-family:'JetBrains Mono',monospace; color:var(--gold-soft); font-size:13px;}
-  .field-line{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:14.5px;}
-  .field-line span:first-child{color:var(--muted);}
-
-  /* ---------- Admin ---------- */
-  .admin-shell{display:flex; min-height:100vh;}
-  .side{
-    width:220px; background:var(--surface); border-right:1px solid var(--line);
-    padding:26px 16px; display:flex; flex-direction:column; gap:6px;
-  }
-  .side .brand{padding:0 8px 22px;}
-  .navbtn{
-    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:9px;
-    background:transparent; color:var(--muted); font-size:14px; text-align:left; width:100%;
-  }
-  .navbtn.active{background:var(--surface-alt); color:var(--gold-soft);}
-  .navbtn:hover{color:var(--ivory);}
-  .main{flex:1; padding:30px 34px; max-width:980px;}
-  .main h2{font-size:24px; margin-bottom:4px;}
-  .sub{color:var(--muted); font-size:13.5px; margin-bottom:26px;}
-
-  table{width:100%; border-collapse:collapse; font-size:14px;}
-  th{text-align:left; color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; padding:10px 12px; border-bottom:1px solid var(--line);}
-  td{padding:13px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
-  tr:hover td{background:rgba(42,36,48,0.035);}
-  .tag{font-size:11px; padding:3px 9px; border-radius:20px; background:var(--surface-alt); color:var(--gold-soft); font-family:'JetBrains Mono',monospace;}
-
-  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
-  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
-  .cal-dow{font-size:11px; text-align:center; color:var(--muted); padding-bottom:6px; text-transform:uppercase;}
-  .cal-cell{
-    aspect-ratio:1; border-radius:9px; border:1px solid var(--line); background:var(--surface-alt);
-    padding:7px; font-size:13px; position:relative; cursor:default; color:var(--muted);
-  }
-  .cal-cell.inmonth{color:var(--ivory);}
-  .cal-cell.has-event{border-color:var(--gold); cursor:pointer;}
-  .cal-cell .dot{position:absolute; bottom:7px; right:7px; width:7px; height:7px; border-radius:50%; background:var(--gold);}
-  .cal-cell.today{box-shadow: inset 0 0 0 1.5px var(--gold-soft);}
-
-  .empty{color:var(--muted); font-size:14px; padding:30px 0; text-align:center; border:1px dashed var(--line); border-radius:10px;}
-
-  .login-wrap{display:flex; align-items:center; justify-content:center; min-height:100vh;}
-  .qris-preview{width:150px; border-radius:10px; border:1px solid var(--line); margin-top:10px;}
-  .invoice-view{background:#fff; color:#1E1A22; border-radius:12px; padding:0; overflow:hidden;}
-  .invoice-view .ihead{background:#0F2A4A; color:#EAF3FC; padding:22px 28px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
-  .invoice-view .ibody{padding:28px;}
-  .invoice-view table td, .invoice-view table th{border-color:#e6e1d8; color:#1E1A22;}
-  .inv-badge{font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.08em; padding:6px 14px; border-radius:20px; text-transform:uppercase; margin-left:auto;}
-  .inv-label{width:140px; color:#6b6455;}
-  .action-row{display:flex; gap:10px; flex-wrap:wrap;}
-  .list-card{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; gap:12px; flex-wrap:wrap;}
-  .inv-actions-mobile{display:none;}
-  @media (max-width:800px){
-    .invoice-view .ihead{padding:16px; gap:10px;}
-    .invoice-view .ibody{padding:16px;}
-    .invoice-view table{font-size:12.5px;}
-    .inv-badge{margin-left:0;}
-    .inv-label{width:auto; min-width:100px;}
-    .action-row{flex-direction:column;}
-    .action-row .btn{width:100%;}
-    .list-card{flex-direction:column; align-items:stretch;}
-    .inv-actions-desktop{display:none;}
-    .inv-actions-mobile{
-      display:block; width:100%; background:var(--surface-alt); color:var(--ivory);
-      border:1px solid var(--line); border-radius:10px; padding:11px 12px;
-      font-size:13.5px; font-family:inherit; appearance:none; -webkit-appearance:none;
-      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23C9A34E' stroke-width='2'><polyline po[...]
-      background-repeat:no-repeat; background-position:right 12px center; padding-right:34px;
-    }
-    .inv-actions-mobile:focus{outline:none; border-color:var(--gold);}
-  }
-  .toast{
-    position:fixed; bottom:24px; right:24px; background:var(--surface); border:1px solid var(--gold);
-    padding:14px 18px; border-radius:10px; font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,.4);
-    display:none; z-index:50; max-width:320px;
-  }
-  ::selection{background:var(--gold); color:#FFFFFF;}
-  .pw-wrap{position:relative;}
-  .pw-wrap input{padding-right:42px;}
-  .pw-toggle{
-    position:absolute; right:4px; top:50%; transform:translateY(-50%);
-    background:transparent; border:none; cursor:pointer; padding:8px;
-    font-size:16px; line-height:1; color:var(--muted);
-  }
-  .pw-toggle:hover{color:var(--gold);}
-  .mobile-nav{display:none;}
-  @media (max-width:800px){
-    .admin-shell{flex-direction:column; min-height:auto;}
-    .side{display:none;}
-    .mobile-nav{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:14px 16px; border-bottom:1px solid var(--line); background:var(--surface);
-      position:sticky; top:0; z-index:20;
-    }
-    .mobile-nav-brand{display:flex; align-items:center; gap:8px; font-size:13px; white-space:nowrap;}
-    .mobile-nav-brand .mark{width:28px; height:28px; border-radius:8px; object-fit:contain;}
-    .mobile-nav-brand b{color:var(--gold-soft); font-weight:600;}
-    .mobile-select{
-      flex:1; max-width:220px; background:var(--surface-alt); color:var(--ivory);
-      border:1px solid var(--line); border-radius:10px; padding:10px 12px;
-      font-size:13.5px; font-family:inherit; appearance:none; -webkit-appearance:none;
-      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23C9A34E' stroke-width='2'><polyline po[...]
-      background-repeat:no-repeat; background-position:right 10px center; padding-right:30px;
-    }
-    .mobile-select:focus{outline:none; border-color:var(--gold);}
-    .main{padding:20px 14px; max-width:100%;}
-    .main h2{font-size:19px;}
-    .sub{margin-bottom:18px;}
-    .row2{grid-template-columns:1fr;}
-    table{font-size:12.5px;}
-    th, td{padding:9px 8px;}
-  }
-  @media (max-width:480px){
-    .main{padding:14px 10px;}
-    .mobile-select{max-width:170px; font-size:12.5px;}
-    table{font-size:11.5px;}
-    th, td{padding:7px 6px;}
-  }
-  #mainArea{overflow-x:auto;}
+  :root{ --bg:#FFFFFF; --surface:#FFFFFF; --surface-alt:#EAF3FC; --line: rgba(30,64,143,0.14); --gold:#2563EB; --ivory:#0F2A4A; --muted:#5C7A9C; --radius:12px; }
+  *{box-sizing:border-box;} body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial; color:var(--ivory); background:var(--bg);}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .pass{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .form-grid{display:grid;gap:12px}
+  input,textarea,select{padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-alt);color:var(--ivory);}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:none;background:var(--gold);color:#fff;cursor:pointer}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ivory)}
+  .admin-shell{display:flex;gap:12px}
+  .side{width:220px}
+  .main{flex:1}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+  .tag{background:var(--surface-alt);padding:4px 8px;border-radius:12px;font-family:JetBrains Mono,monospace}
+  @media(max-width:800px){.admin-shell{flex-direction:column}.side{display:none}.mobile-nav{display:flex;gap:8px;margin-bottom:12px}}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<div class="toast" id="toast"></div>
-
+<div id="toast" style="position:fixed;right:16px;bottom:16px;background:#fff;padding:10px;border-radius:8px;border:1px solid var(--line);display:none"></div>
 <script>
-/* ============ CONFIG ============ */
-let ADMIN_WA_NUMBER = "6285226452935"; // default, bisa diganti admin di tab Pengaturan
-let ADMIN_PASSWORD = "pesona2026"; // default, bisa diganti admin di tab Pengaturan
-
-/* Format nomor WA admin untuk ditampilkan ke pengguna, contoh: 6285226452935 -> +62 852-2645-2935.
-   Selalu mengikuti ADMIN_WA_NUMBER terbaru (yang bisa diubah admin di tab Pengaturan). */
-function formatWaDisplay(num){
-  const digits = String(num || '').replace(/\D/g,'');
-  if(!digits) return '';
-  const rest = digits.startsWith('62') ? digits.slice(2) : (digits.startsWith('0') ? digits.slice(1) : digits);
-  const groups = [];
-  const pattern = [3,4,4,4];
-  let i = 0, p = 0;
-  while(i < rest.length){
-    const len = pattern[p] || 4;
-    groups.push(rest.slice(i, i+len));
-    i += len; p++;
-  }
-  return '+62 ' + groups.join('-');
-}
-let ADMIN_REKENING = []; // daftar rekening pembayaran: {id, bank, noRek, atasNama}
-let pendingOtp = null; // { code, newPassword, expiresAt }
-const LOGO_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAKACAYAAAAMzckjAAEAAElEQVR42uzdd5xcVdkH8N9zzr1TdjcbAgkJvYMmgAUFBJWmgtjLjAUQlSYI8gKiIsjsCIoKggiCFEVBBGf0RSwILyJGQUFFRExoSSC9b5+[...]
-
-
+/* Minimal, cleaned version — implements requested fixes and avoids large external blobs */
+const LOGO = '';
+let ADMIN_WA_NUMBER = '6285226452935';
+let ADMIN_PASSWORD = 'pesona2026';
+let ADMIN_REKENING = [];
 let adminAuthed = false;
+const LS_PREFIX = 'gp_';
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+async function sGet(k){ try{ const v=localStorage.getItem(LS_PREFIX+k); return v?JSON.parse(v):null;}catch(e){return null} }
+async function sSet(k,v){ try{ localStorage.setItem(LS_PREFIX+k, JSON.stringify(v)); return true;}catch(e){toast('Gagal simpan');return false} }
+async function sList(prefix){ const out=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith(LS_PREFIX+prefix)) out.push(k.slice(LS_PREFIX.length)); } return out; }
+async function sDelete(k){ localStorage.removeItem(LS_PREFIX+k); }
 
-/* ============ STORAGE HELPERS (shared, terlihat oleh siapa pun yang punya tautan ini) ============ */
-const STORAGE_AVAILABLE = (typeof window.storage !== 'undefined' && window.storage !== null);
-const LS_PREFIX = 'gp_'; // fallback lokal (localStorage) jika window.storage tidak tersedia
+async function getAllBookings(){ const keys = await sList('booking:'); const items = await Promise.all(keys.map(k=>sGet(k))); return items.filter(Boolean).sort((a,b)=>b.createdAt - a.createdAt); }
+async function getAllInvoices(){ const keys = await sList('invoice:'); const items = await Promise.all(keys.map(k=>sGet(k))); return items.filter(Boolean).sort((a,b)=>b.createdAt - a.createdAt); }
 
-function lsListKeys(prefix){
-  const out = [];
-  for(let i=0;i<localStorage.length;i++){
-    const k = localStorage.key(i);
-    if(k && k.startsWith(LS_PREFIX + prefix)) out.push(k.slice(LS_PREFIX.length));
-  }
-  return out;
-}
-async function sGet(key){
-  if(STORAGE_AVAILABLE){
-    try{ const r = await window.storage.get(key, true); return r ? JSON.parse(r.value) : null; }
-    catch(e){ console.warn('storage.get gagal, fallback localStorage', e); }
-  }
-  try{ const raw = localStorage.getItem(LS_PREFIX+key); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
-}
-async function sSet(key, val){
-  if(STORAGE_AVAILABLE){
-    try{ return await window.storage.set(key, JSON.stringify(val), true); }
-    catch(e){ console.warn('storage.set gagal, fallback localStorage', e); }
-  }
-  try{ localStorage.setItem(LS_PREFIX+key, JSON.stringify(val)); return {key, value:val}; }
-  catch(e){ console.error('Gagal menyimpan data', e); toast('Gagal menyimpan data pemesanan. Coba muat ulang halaman.'); return null; }
-}
-async function sList(prefix){
-  if(STORAGE_AVAILABLE){
-    try{ const r = await window.storage.list(prefix, true); return r ? r.keys : []; }
-    catch(e){ console.warn('storage.list gagal, fallback localStorage', e); }
-  }
-  return lsListKeys(prefix);
-}
-async function sDelete(key){
-  if(STORAGE_AVAILABLE){
-    try{ return await window.storage.delete(key, true); }
-    catch(e){ console.warn('storage.delete gagal, fallback localStorage', e); }
-  }
-  try{ localStorage.removeItem(LS_PREFIX+key); return {deleted:true}; }catch(e){ return null; }
-}
+window.addEventListener('hashchange', render); window.addEventListener('DOMContentLoaded', render);
+function render(){ const hash = location.hash || '#/'; if(hash.startsWith('#/admin')){ if(!adminAuthed) renderAdminLogin(); else renderAdmin(); } else renderForm(); }
 
-async function loadSettings(){
-  try{
-    const s = await sGet('settings:main');
-    if(s){
-      if(s.adminNumber) ADMIN_WA_NUMBER = s.adminNumber;
-      if(s.adminPassword) ADMIN_PASSWORD = s.adminPassword;
-      if(Array.isArray(s.rekening)) ADMIN_REKENING = s.rekening;
-    }
-  }catch(e){ console.warn('Gagal memuat pengaturan, pakai default', e); }
-}
-async function saveSettings(){
-  try{ await sSet('settings:main', { adminNumber: ADMIN_WA_NUMBER, adminPassword: ADMIN_PASSWORD, rekening: ADMIN_REKENING }); }
-  catch(e){ console.warn('Gagal menyimpan pengaturan', e); }
-}
-
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-function togglePw(id, btn){
-  const el = document.getElementById(id);
-  if(!el) return;
-  if(el.type === 'password'){
-    el.type = 'text';
-    btn.textContent = '🙈';
-    btn.setAttribute('aria-label','Sembunyikan kata sandi');
-  } else {
-    el.type = 'password';
-    btn.textContent = '👁';
-    btn.setAttribute('aria-label','Tampilkan kata sandi');
-  }
-}
-function fmtIDR(n){ return "Rp " + Number(n||0).toLocaleString('id-ID'); }
-function fmtDate(d){ if(!d) return "-"; const dt = new Date(d+"T00:00:00"); return dt.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none', 3200); }
-
-/* ---- Kirim Invoice ke WhatsApp Pelanggan ---- */
-const INVOICE_CACHE = {};
-function cacheInvoice(inv){ if(inv && inv.id) INVOICE_CACHE[inv.id] = inv; return inv; }
-function normalizeWaNumber(raw){
-  let digits = (raw||'').replace(/[^0-9]/g,'');
-  if(!digits) return '';
-  if(digits.startsWith('0')) digits = '62' + digits.slice(1);
-  else if(!digits.startsWith('62')) digits = '62' + digits;
-  return digits;
-}
-function buildInvoiceWaPlainText(inv){
-  const b = inv.booking || {};
-  const rekLines = (inv.rekening && inv.rekening.length)
-    ? inv.rekening.map(r=>`• ${r.bank}: ${r.noRek}${r.atasNama ? ' a.n. '+r.atasNama : ''}`).join('\n')
-    : '-';
-  return `*Invoice Gallery Pesona*\n\n`+
-    `No. Invoice: ${inv.id}\n`+
-    `Nama: ${b.nama || '-'}\n`+
-    `Tempat Event: ${b.tempat || '-'}\n`+
-    `Tanggal Event: ${fmtDate(b.tanggal)}${b.jam ? ' · '+b.jam : ''}\n`+
-    `Total Tagihan: ${fmtIDR(inv.harga)}\n`+
-    `Status Pembayaran: ${inv.status==='lunas' ? 'LUNAS' : 'BELUM LUNAS'}\n`+
-    (inv.catatan ? `Catatan: ${inv.catatan}\n` : '')+
-    `\nRekening Pembayaran:\n${rekLines}\n\n`+
-    (inv.status==='lunas' ? `Terima kasih, pembayaran sudah kami terima 🙏` : `Mohon melakukan pembayaran sesuai rekening di atas dan kirim bukti transfer ke sini. Terima kasih 🙏`)+
-    `\n\n(Invoice PDF terlampir)`;
-}
-
-async function generateInvoicePdfBlob(inv){
-  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
-    throw new Error('Library pembuat PDF belum siap dimuat.');
-  }
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'fixed';
-  wrapper.style.left = '-9999px';
-  wrapper.style.top = '0';
-  wrapper.style.width = '720px';
-  wrapper.style.background = '#ffffff';
-  wrapper.innerHTML = buildInvoiceViewHtml(inv);
-  document.body.appendChild(wrapper);
-  try{
-    const canvas = await html2canvas(wrapper, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pageWidthMm = 210;
-    const pageHeightMm = (canvas.height / canvas.width) * pageWidthMm;
-    const pdf = new jsPDF({ unit: 'mm', format: [pageWidthMm, pageHeightMm] });
-    pdf.addImage(imgData, 'PNG', 0, 0, pageWidthMm, pageHeightMm);
-    return pdf.output('blob');
-  } finally {
-    wrapper.remove();
-  }
-}
-
-async function sendInvoiceToCustomer(id){
-  const inv = INVOICE_CACHE[id];
-  if(!inv){ toast('Data invoice tidak ditemukan, coba muat ulang halaman.'); return; }
-  const b = inv.booking || {};
-  const waNumber = normalizeWaNumber(b.noWa);
-  if(!waNumber){ toast('Nomor WhatsApp pelanggan tidak tersedia pada data pemesanan ini.'); return; }
-
-  const btn = document.getElementById('waSendBtn_'+id);
-  const btnOrigText = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = 'Menyiapkan PDF…'; }
-  toast('Menyiapkan file PDF invoice…');
-
-  let pdfBlob = null;
-  try{ pdfBlob = await generateInvoicePdfBlob(inv); }
-  catch(err){ console.warn('Gagal membuat PDF invoice', err); }
-
-  if(btn){ btn.disabled = false; btn.textContent = btnOrigText; }
-
-  const fileName = `${inv.id}.pdf`;
-  const plainText = buildInvoiceWaPlainText(inv);
-
-  if(pdfBlob && navigator.canShare && navigator.share){
-    try{
-      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      if(navigator.canShare({ files: [file] })){
-        await navigator.share({ files: [file], text: plainText, title: `Invoice ${inv.id}` });
-        toast('Pilih WhatsApp pada menu Bagikan untuk mengirim invoice ke pelanggan.');
-        return;
-      }
-    }catch(err){
-      if(err && err.name === 'AbortError'){ toast('Pengiriman dibatalkan.'); return; }
-      console.warn('Web Share gagal, fallback ke unduh manual', err);
-    }
-  }
-
-  if(pdfBlob){
-    try{
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url; a.download = fileName;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 60000);
-    }catch(err){ console.warn('Gagal mengunduh PDF', err); }
-  }
-
-  const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(plainText)}`;
-  let win = null;
-  try{ win = window.open(waUrl, '_blank'); }catch(err){ console.warn('window.open diblokir', err); }
-  const holder = document.getElementById('waFallback_'+id);
-  if(!win || win.closed){
-    toast('Popup diblokir. Klik tombol "Buka WhatsApp Pelanggan" di bawah, lalu lampirkan PDF yang sudah terunduh.');
-    if(holder) holder.innerHTML = `<button class="btn btn-primary" style="margin-top:10px;" onclick="window.open('${waUrl}','_blank')">Buka WhatsApp Pelanggan</button>`;
-  } else {
-    toast(pdfBlob ? 'PDF invoice terunduh & WhatsApp dibuka — lampirkan file PDF secara manual di chat.' : 'WhatsApp dibuka (PDF gagal dibuat, teks saja terkirim).');
-    if(holder) holder.innerHTML = pdfBlob ? `<p class="foot-note" style="text-align:left; margin-top:8px;">PDF (${fileName}) sudah terunduh ke perangkat — lampirkan file itu di chat WhatsApp ya.</p>` : `<p class="foot-note" style="text-align:left; margin-top:8px;">Buka chat WhatsApp pelanggan dan kirim pesan.</p>`;
-  }
-}
-
-async function getAllBookings(){
-  const keys = await sList('booking:');
-  const items = await Promise.all(keys.map(k => sGet(k)));
-  return items.filter(Boolean).sort((a,b)=> b.createdAt - a.createdAt);
-}
-async function getAllInvoices(){
-  const keys = await sList('invoice:');
-  const items = await Promise.all(keys.map(k => sGet(k)));
-  return items.filter(Boolean).sort((a,b)=> b.createdAt - a.createdAt).map(cacheInvoice);
-}
-
-/* ============ ROUTER ============ */
-window.addEventListener('hashchange', render);
-window.addEventListener('DOMContentLoaded', init);
-
-async function init(){
-  await loadSettings();
-  render();
-}
-
-function render(){
-  const hash = location.hash || '#/';
-  if(hash.startsWith('#/admin')){
-    if(!adminAuthed){ renderAdminLogin(); } else { renderAdmin(); }
-  } else {
-    renderForm();
-  }
-}
-
-/* ============ CUSTOMER FORM PAGE ============ */
-function renderForm(){
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <header class="top">
-      <div class="brand">
-        <img class="mark" src="${LOGO_SRC}" alt="Gallery Pesona">
-        <div class="brand-name"><b>Gallery Pesona</b> · Live Streaming Event</div>
-      </div>
-    </header>
-    <div class="wrap" style="max-width:640px;">
-      <div class="hero">
-        <span class="eyebrow">Formulir Pemesanan</span>
-        <h1 style="margin-top:10px;">Pesan Live Streaming<br>untuk Acara Anda</h1>
-        <p>Isi detail acara di bawah ini. Tim kami akan menerima notifikasi dan menghubungi Anda untuk konfirmasi lebih lanjut.</p>
-      </div>
-      <div class="pass" id="formCard">
-        <div class="pass-head">
-          <span class="eyebrow">Gallery Pesona — Booking Pass</span>
-          <span class="eyebrow" id="dateStamp"></span>
-        </div>
-        <div class="pass-body">
-          <form id="bookingForm" class="form-grid" novalidate>
-            <div>
-              <label>Nama Pemesan</label>
-              <input type="text" id="f_nama" placeholder="Nama lengkap">
-            </div>
-            <div>
-              <label>Nomor WhatsApp</label>
-              <input type="tel" id="f_wa" placeholder="Contoh: 0812xxxxxxxx">
-            </div>
-            <div>
-              <label>Event</label>
-              <input type="text" id="f_isievent" placeholder="Contoh: Akad Nikah, Wisuda, Seminar, dll.">
-            </div>
-            <div>
-              <label>Tempat Event</label>
-              <input type="text" id="f_tempat" placeholder="Contoh: Gedung Serbaguna Kudus">
-            </div>
-            <div>
-              <label>Tanggal Event</label>
-              <input type="date" id="f_tanggal">
-            </div>
-            <div>
-              <label>Jam Event</label>
-              <input type="time" id="f_jam">
-            </div>
-            <div>
-              <label>Catatan (opsional)</label>
-              <textarea id="f_catatan" rows="3" placeholder="Jam mulai, kebutuhan khusus, dll."></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top:6px;">Kirim Pemesanan</button>
-          </form>
-        </div>
-      </div>
-      <p class="foot-note">Setelah mengisi Formulir ini jangan lupa screenshoot dan kirim ke admin (${formatWaDisplay(ADMIN_WA_NUMBER)}).</p>
+/* CUSTOMER FORM */
+function renderForm(){ const app=document.getElementById('app'); app.innerHTML = `
+  <div class="wrap">
+    <div class="brand"><div style="width:40px;height:40px;background:#eee;border-radius:8px"></div><div><b>Gallery Pesona</b><div style="font-size:13px;color:var(--muted)">Live Streaming</div></div></div>
+    <div style="height:18px"></div>
+    <div class="pass">
+      <div style="font-weight:600;margin-bottom:8px">Formulir Pemesanan</div>
+      <form id="bookingForm" class="form-grid">
+        <input id="f_nama" placeholder="Nama lengkap">
+        <input id="f_wa" placeholder="Nomor WhatsApp (0812...)">
+        <input id="f_isievent" placeholder="Event (Akad, Wisuda, dll)">
+        <input id="f_tempat" placeholder="Tempat Event">
+        <div style="display:flex;gap:8px"><input id="f_tanggal" type="date"><input id="f_jam" type="time"></div>
+        <textarea id="f_catatan" rows="3" placeholder="Catatan (opsional)"></textarea>
+        <div style="display:flex;gap:8px"><button class="btn" type="submit">Kirim Pemesanan</button><a href="#/admin" class="btn btn-ghost" style="text-decoration:none">Admin</a></div>
+      </form>
     </div>
-  `;
-  document.getElementById('dateStamp').textContent = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  </div>`;
   document.getElementById('bookingForm').addEventListener('submit', onSubmitBooking);
 }
-
-async function onSubmitBooking(e){
-  e.preventDefault();
-  const nama = document.getElementById('f_nama').value.trim();
-  const noWa = document.getElementById('f_wa').value.trim();
-  const isiEvent = document.getElementById('f_isievent').value.trim();
-  const tempat = document.getElementById('f_tempat').value.trim();
-  const tanggal = document.getElementById('f_tanggal').value;
-  const jam = document.getElementById('f_jam').value;
-  const catatan = document.getElementById('f_catatan').value.trim();
-  if(!nama || !noWa || !isiEvent || !tempat || !tanggal || !jam){ toast('Mohon isi Nama, Nomor WA, Event, Tempat Event, Tanggal dan Jam Event.'); return; }
-
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Mengirim…'; }
-
-  const id = uid();
-  const now = new Date();
-  let seq = 1;
-  try{ seq = (await getAllBookings()).length + 1; }catch(err){ console.warn('Gagal menghitung nomor urut, pakai 1', err); }
-  const code = `${String(seq).padStart(3,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
-  const booking = { id, code, nama, noWa, isiEvent, tempat, tanggal, jam, catatan, createdAt: now.getTime(), status:'baru' };
-
-  try{
-    await sSet('booking:'+id, booking);
-  }catch(err){
-    console.error('Gagal menyimpan booking', err);
-    toast('Pesanan dicatat, tapi ada gangguan penyimpanan. Silakan tetap konfirmasi lewat WhatsApp.');
-  }
-
-  const waText = encodeURIComponent(
-    `*Pemesanan Live Streaming Baru — Gallery Pesona*\n\n`+
-    `Nama: ${nama}\n`+
-    `Nomor WA: ${noWa}\n`+
-    `Event: ${isiEvent}\n`+
-    `Tempat Event: ${tempat}\n`+
-    `Tanggal Event: ${fmtDate(tanggal)} · ${jam}\n`+
-    `Catatan: ${catatan || '-'}\n\n`+
-    `ID Booking: ${code}`
-  );
-  const waUrl = `https://wa.me/${ADMIN_WA_NUMBER}?text=${waText}`;
-
-  let win = null;
-  try{ win = window.open(waUrl, '_blank'); }catch(err){ console.warn('window.open diblokir', err); }
-
-  renderConfirmation(booking, waUrl, !win || win.closed);
+async function onSubmitBooking(e){ e.preventDefault(); const nama=document.getElementById('f_nama').value.trim(); const noWa=document.getElementById('f_wa').value.trim(); const isiEvent=document.getElementById('f_isievent').value.trim(); const tempat=document.getElementById('f_tempat').value.trim(); const tanggal=document.getElementById('f_tanggal').value; const jam=document.getElementById('f_jam').value; const catatan=document.getElementById('f_catatan').value.trim(); if(!nama||!noWa||!isiEvent||!tempat||!tanggal||!jam){ toast('Mohon isi Nama, WA, Event, Tempat, Tanggal, dan Jam'); return; }
+  const id=uid(); const now=Date.now(); const bookings = await getAllBookings(); const seq = bookings.length+1; const code = `${String(seq).padStart(3,'0')}-${tanggal}`;
+  const booking={ id, code, nama, noWa, isiEvent, tempat, tanggal, jam, catatan, createdAt:now, status:'baru' };
+  await sSet('booking:'+id, booking); toast('Pemesanan tersimpan'); const wa = 'https://wa.me/'+ADMIN_WA_NUMBER+'?text='+encodeURIComponent('Pemesanan '+code+' dari '+nama); window.open(wa,'_blank'); renderConfirmation(booking);
 }
-
-function renderConfirmation(b, waUrl, popupBlocked){
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <header class="top">
-      <div class="brand">
-        <img class="mark" src="${LOGO_SRC}" alt="Gallery Pesona">
-        <div class="brand-name"><b>Gallery Pesona</b> · Live Streaming Event</div>
-      </div>
-    </header>
-    <div class="wrap" style="max-width:520px;">
-      <div class="hero">
-        <span class="eyebrow">Terkirim</span>
-        <h1 style="margin-top:10px; font-size:28px;">Pemesanan diterima</h1>
-        <p>Simpan ID booking Anda sebagai referensi.</p>
-      </div>
-      <div class="pass">
-        <div class="pass-head">
-          <span class="eyebrow">Booking Pass</span>
-          <span class="confirm-num">#${b.code || b.id}</span>
-        </div>
-        <div class="pass-body">
-          <div class="field-line"><span>Nama</span><span>${b.nama}</span></div>
-          <div class="field-line"><span>Nomor WA</span><span>${b.noWa || '-'}</span></div>
-          <div class="field-line"><span>Event</span><span>${b.isiEvent || '-'}</span></div>
-          <div class="field-line"><span>Tempat Event</span><span>${b.tempat}</span></div>
-          <div class="field-line"><span>Tanggal Event</span><span>${fmtDate(b.tanggal)}${b.jam ? ' · '+b.jam : ''}</span></div>
-          <div class="field-line"><span>Jam</span><span>${b.jam || '-'}</span></div>
-          <div class="field-line"><span>Catatan</span><span>${b.catatan || '-'}</span></div>
-          ${popupBlocked ? `<button class="btn btn-primary" style="width:100%; margin-top:20px;" onclick="window.open('${waUrl}','_blank')">Buka WhatsApp Admin</button>` : ``}
-          <p class="foot-note" style="margin-top:20px;">Jangan lupa screenshoot halaman ini dan kirim ke admin (${formatWaDisplay(ADMIN_WA_NUMBER)}) sebagai konfirmasi pemesanan.</p>
-          <button class="btn btn-ghost" style="width:100%; margin-top:10px;" onclick="location.hash='#/'; render();">Buat Pemesanan Lain</button>
-        </div>
-      </div>
+function renderConfirmation(b){ const app=document.getElementById('app'); app.innerHTML = `
+  <div class="wrap">
+    <div class="pass">
+      <div style="font-weight:600">Pemesanan Diterima</div>
+      <div style="margin-top:8px">ID: <span class="tag">${b.code}</span></div>
+      <div style="margin-top:12px">Nama: ${b.nama}</div>
+      <div>Event: ${b.isiEvent}</div>
+      <div>Tempat: ${b.tempat}</div>
+      <div>Tanggal · Jam: ${b.tanggal} · ${b.jam}</div>
+      <div>Catatan: ${b.catatan||'-'}</div>
+      <div style="margin-top:12px"><button class="btn" onclick="location.hash='#/'">Buat Pemesanan Lagi</button></div>
     </div>
-  `;
-}
+  </div>`; }
 
-/* ============ ADMIN LOGIN ============ */
-function renderAdminLogin(){
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="login-wrap">
-      <div class="card" style="width:340px;">
-        <div class="brand" style="margin-bottom:20px;">
-          <img class="mark" src="${LOGO_SRC}" alt="Gallery Pesona">
-          <div class="brand-name"><b>Gallery Pesona</b><br><span style="color:var(--muted); font-size:12px;">Admin Panel</span></div>
-        </div>
-        <label>Kata Sandi Admin</label>
-        <div class="pw-wrap">
-          <input type="password" id="adminPass" placeholder="••••••••">
-          <button type="button" class="pw-toggle" onclick="togglePw('adminPass', this)" aria-label="Tampilkan kata sandi">👁</button>
-        </div>
-        <button class="btn btn-primary" style="width:100%; margin-top:14px;" id="loginBtn">Masuk</button>
-        <p id="loginErr" style="color:var(--danger); font-size:12.5px; margin-top:10px; display:none;">Kata sandi salah.</p>
-        <a href="#/" style="display:block; text-align:center; margin-top:16px; font-size:12.5px; color:var(--muted); text-decoration:none;">← Kembali ke form pemesanan</a>
-      </div>
+/* ADMIN */
+function renderAdminLogin(){ const app=document.getElementById('app'); app.innerHTML = `
+  <div class="wrap">
+    <div class="pass" style="max-width:420px;margin:0 auto">
+      <div style="font-weight:600;margin-bottom:8px">Admin Panel</div>
+      <input id="adminPass" type="password" placeholder="Kata sandi admin">
+      <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" id="loginBtn">Masuk</button><a class="btn btn-ghost" href="#/">Kembali</a></div>
     </div>
-  `;
-  document.getElementById('loginBtn').addEventListener('click', ()=>{
-    const val = document.getElementById('adminPass').value;
-    if(val === ADMIN_PASSWORD){ adminAuthed = true; render(); }
-    else{ document.getElementById('loginErr').style.display='block'; }
-  });
-  document.getElementById('adminPass').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('loginBtn').click(); });
-}
+  </div>`;
+  document.getElementById('loginBtn').addEventListener('click', ()=>{ const v=document.getElementById('adminPass').value; if(v===ADMIN_PASSWORD){ adminAuthed=true; renderAdmin(); } else { toast('Kata sandi salah'); } }); }
 
-/* ============ ADMIN SHELL ============ */
-let adminTab = 'bookings';
-
-function renderAdmin(){
-  const app = document.getElementById('app');
-  app.innerHTML = `
+async function renderAdmin(){ const app=document.getElementById('app'); app.innerHTML = `
+  <div class="wrap">
     <div class="admin-shell">
       <div class="side">
-        <div class="brand"><img class="mark" src="${LOGO_SRC}" alt="Gallery Pesona"><div class="brand-name"><b>Gallery Pesona</b></div></div>
-        <button class="navbtn ${adminTab==='bookings'?'active':''}" data-tab="bookings">📋 Data Pemesanan</button>
-        <button class="navbtn ${adminTab==='calendar'?'active':''}" data-tab="calendar">📅 Kalender</button>
-        <button class="navbtn ${adminTab==='invoice'?'active':''}" data-tab="invoice">🧾 Invoice</button>
-        <a href="#/" class="navbtn" style="text-decoration:none;">➕ Pemesanan</a>
-        <button class="navbtn ${adminTab==='settings'?'active':''}" data-tab="settings">⚙️ Pengaturan</button>
+        <div style="font-weight:700;margin-bottom:8px">Admin</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="switchTab('bookings')" id="tab_bookings" class="btn btn-ghost">📋 Data Pemesanan</button>
+          <button onclick="switchTab('calendar')" id="tab_calendar" class="btn btn-ghost">📅 Kalender</button>
+          <button onclick="switchTab('invoice')" id="tab_invoice" class="btn btn-ghost">🧾 Invoice</button>
+          <button onclick="switchTab('settings')" class="btn btn-ghost">⚙️ Pengaturan</button>
+          <button onclick="doLogout()" class="btn btn-ghost">Keluar</button>
+        </div>
       </div>
-      <div class="mobile-nav">
-        <div class="mobile-nav-brand"><img class="mark" src="${LOGO_SRC}" alt="Gallery Pesona"><b>Gallery Pesona</b></div>
-        <select id="mobileTabSelect" class="mobile-select">
-          <option value="bookings" ${adminTab==='bookings'?'selected':''}>📋 Data Pemesanan</option>
-          <option value="calendar" ${adminTab==='calendar'?'selected':''}>📅 Kalender</option>
-          <option value="invoice" ${adminTab==='invoice'?'selected':''}>🧾 Invoice</option>
-          <option value="booking-form">➕ Pemesanan</option>
-          <option value="settings" ${adminTab==='settings'?'selected':''}>⚙️ Pengaturan</option>
-        </select>
-      </div>
-      <div class="main" id="mainArea"></div>
+      <div class="main" id="adminMain"></div>
     </div>
-  `;
-  document.querySelectorAll('.navbtn[data-tab]').forEach(b=>{
-    b.addEventListener('click', ()=>{ adminTab = b.dataset.tab; renderAdmin(); });
-  });
-  const mobileSelect = document.getElementById('mobileTabSelect');
-  if(mobileSelect){
-    mobileSelect.addEventListener('change', ()=>{
-      const val = mobileSelect.value;
-      if(val === 'booking-form'){ location.hash = '#/'; render(); }
-      else { adminTab = val; renderAdmin(); }
-    });
-  }
-  const mainArea = document.getElementById('mainArea');
-  if(adminTab==='bookings') renderBookingsTab(mainArea);
-  else if(adminTab==='calendar') renderCalendarTab(mainArea);
-  else if(adminTab==='invoice') renderInvoiceTab(mainArea);
-  else renderSettingsTab(mainArea);
-}
+  </div>`;
+  // default tab
+  window.adminCurrentTab = window.adminCurrentTab || 'bookings'; renderAdminTab(); }
+function switchTab(t){ window.adminCurrentTab = t; renderAdminTab(); }
+function doLogout(){ adminAuthed=false; render(); }
 
-/* ---- Tab: Bookings ---- */
+async function renderAdminTab(){ const main=document.getElementById('adminMain'); const tab = window.adminCurrentTab || 'bookings'; if(tab==='bookings'){ await renderBookings(main); } else if(tab==='calendar'){ await renderCalendar(main); } else if(tab==='invoice'){ await renderInvoice(main); } else renderSettings(main); }
+
+/* Bookings with search + edit (mobile-friendly) */
 let editingBookingId = null;
-function editBooking(id){ editingBookingId = id; adminTab = 'bookings'; renderAdmin(); }
-function cancelEditBooking(){ editingBookingId = null; renderAdmin(); }
-async function saveBookingEdit(id){
-  const nama = document.getElementById('eb_nama').value.trim();
-  const noWa = document.getElementById('eb_wa').value.trim();
-  const isiEvent = document.getElementById('eb_isievent').value.trim();
-  const tempat = document.getElementById('eb_tempat').value.trim();
-  const tanggal = document.getElementById('eb_tanggal').value;
-  const jam = document.getElementById('eb_jam') ? document.getElementById('eb_jam').value : '';
-  const catatan = document.getElementById('eb_catatan').value.trim();
-  if(!nama || !tempat || !tanggal || !jam){ toast('Mohon lengkapi Nama, Tempat, Tanggal, dan Jam.'); return; }
-  const existing = await sGet('booking:'+id);
-  const updated = Object.assign({}, existing, { nama, noWa, isiEvent, tempat, tanggal, jam, catatan });
-  await sSet('booking:'+id, updated);
-  toast('Perubahan pemesanan disimpan.');
-  editingBookingId = null;
-  renderAdmin();
-}
-function armDelete(btn, kind, id){
-  if(btn.dataset.armed === '1'){
-    if(kind==='rekening'){ deleteRekening(id); } else { doDelete(kind, id); }
-  } else {
-    btn.dataset.armed = '1';
-    btn.dataset.origText = btn.textContent;
-    btn.textContent = 'Klik lagi';
-    btn.classList.add('btn-danger');
-    clearTimeout(btn._armTimer);
-    btn._armTimer = setTimeout(()=>{
-      btn.dataset.armed='0';
-      btn.textContent = btn.dataset.origText;
-      btn.classList.remove('btn-danger');
-    }, 4000);
-  }
-}
-async function doDelete(kind, id){
-  await sDelete((kind==='booking' ? 'booking:' : 'invoice:') + id);
-  toast(kind==='booking' ? 'Pemesanan dihapus.' : 'Invoice dihapus.');
-  if(kind==='booking' && editingBookingId===id) editingBookingId = null;
-  if(kind==='invoice' && editingInvoiceId===id) editingInvoiceId = null;
-  renderAdmin();
-}
-
-async function renderBookingsTab(mount){
-  mount.innerHTML = `<h2>Data Pemesanan</h2><p class="sub">Semua data yang masuk dari formulir pelanggan.</p><div id="editBookingArea"></div>
-    <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
-      <input id="bookingsSearch" placeholder="Cari pemesanan (nama, id, event, tempat, tanggal, jam)" style="flex:1; padding:10px; border-radius:10px; border:1px solid var(--line);">
-      <button class="btn btn-ghost" onclick="renderBookingsTab(document.getElementById('mainArea'))">Reset</button>
-    </div>
-    <div id="bookingsList">Memuat…</div>`;
-  const bookings = await getAllBookings();
-
-  if(editingBookingId){
-    const eb = bookings.find(b=>b.id===editingBookingId);
-    if(eb){
-      document.getElementById('editBookingArea').innerHTML = `
-        <div class="card" style="margin-bottom:20px;">
-          <h3 style="font-size:15px; margin-bottom:14px;">Edit Pemesanan · ${eb.code || eb.id}</h3>
-          <div class="form-grid">
-            <div class="row2">
-              <div><label>Nama</label><input type="text" id="eb_nama" value="${(eb.nama||'').replace(/"/g,'&quot;')}"></div>
-              <div><label>Nomor WA</label><input type="tel" id="eb_wa" value="${(eb.noWa||'').replace(/"/g,'&quot;')}"></div>
-            </div>
-            <div class="row2">
-              <div><label>Event</label><input type="text" id="eb_isievent" value="${(eb.isiEvent||'').replace(/"/g,'&quot;')}"></div>
-              <div><label>Tempat Event</label><input type="text" id="eb_tempat" value="${(eb.tempat||'').replace(/"/g,'&quot;')}"></div>
-            </div>
-            <div class="row2">
-              <div><label>Tanggal Event</label><input type="date" id="eb_tanggal" value="${eb.tanggal||''}"></div>
-              <div><label>Jam Event</label><input type="time" id="eb_jam" value="${eb.jam || ''}"></div>
-            </div>
-            <div class="row2">
-              <div><label>Catatan</label><input type="text" id="eb_catatan" value="${(eb.catatan||'').replace(/"/g,'&quot;')}"></div>
-            </div>
-            <div style="display:flex; gap:10px;">
-              <button class="btn btn-primary" onclick="saveBookingEdit('${eb.id}')">Simpan Perubahan</button>
-              <button class="btn btn-ghost" onclick="cancelEditBooking()">Batal</button>
-            </div>
-          </div>
-        </div>
-      `;
-      // Scroll edit area into view on mobile for better UX
-      if(window.innerWidth <= 800 && document.getElementById('editBookingArea')){
-        setTimeout(()=>{ const el = document.getElementById('editBookingArea'); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); const f = el.querySelector('input,textarea,select'); if(f) f.focus(); } }, 120);
-      }
+async function renderBookings(mount){ const bookings = await getAllBookings(); mount.innerHTML = `
+  <h2>Data Pemesanan</h2>
+  <div style="margin-bottom:12px;display:flex;gap:8px"><input id="bookingsSearch" placeholder="Cari (nama, id, event, tempat)" style="flex:1"><button class="btn btn-ghost" id="resetBookings">Reset</button></div>
+  <div id="editBookingArea"></div>
+  <div id="bookingsList"></div>`;
+  document.getElementById('resetBookings').addEventListener('click', ()=>{ document.getElementById('bookingsSearch').value=''; renderBookings(mount); });
+  // if editing
+  if(editingBookingId){ const eb = bookings.find(b=>b.id===editingBookingId); if(eb){ document.getElementById('editBookingArea').innerHTML = `
+    <div class="pass">
+      <div style="font-weight:600">Edit · ${eb.code}</div>
+      <input id="eb_nama" value="${eb.nama}">
+      <input id="eb_wa" value="${eb.noWa}">
+      <input id="eb_isievent" value="${eb.isiEvent}">
+      <input id="eb_tempat" value="${eb.tempat}">
+      <div style="display:flex;gap:8px"><input id="eb_tanggal" type="date" value="${eb.tanggal}"><input id="eb_jam" type="time" value="${eb.jam||''}"></div>
+      <input id="eb_catatan" value="${(eb.catatan||'')}">
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveBookingEdit('${eb.id}')">Simpan</button><button class="btn btn-ghost" onclick="cancelEditBooking()">Batal</button></div>
+    </div>`;
+      // scroll into view on small screens
+      if(window.innerWidth <= 800){ setTimeout(()=>{ const el=document.getElementById('editBookingArea'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },100); }
     }
   }
-
-  const list = document.getElementById('bookingsList');
-  // helper to render table from a list
-  function renderBookingsTable(items){
-    if(items.length===0){ list.innerHTML = `<div class="empty">Tidak ada pemesanan cocok.</div>`; return; }
-    list.innerHTML = `
-      <table>
-        <thead><tr><th>ID Booking</th><th>Nama</th><th>Nomor WA</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Jam</th><th>Catatan</th><th>Diterima</th><th colspan="3"></th></tr></thead>
-        <tbody>
-          ${items.map(b=>`
-            <tr>
-              <td><span class="tag">${b.code || b.id}</span></td>
-              <td>${b.nama}</td>
-              <td>${b.noWa || '-'}</td>
-              <td>${b.isiEvent || '-'}</td>
-              <td>${b.tempat}</td>
-              <td>${fmtDate(b.tanggal)}</td>
-              <td>${b.jam || '-'}</td>
-              <td style="max-width:220px;">${b.catatan || '-'}</td>
-              <td>${new Date(b.createdAt).toLocaleDateString('id-ID')}</td>
-              <td><button class="btn btn-ghost" style="padding:7px 12px; font-size:12.5px;" onclick="jumpToInvoice('${b.id}')">Invoice</button></td>
-              <td><button class="btn btn-ghost" style="padding:7px 12px; font-size:12.5px;" onclick="editBooking('${b.id}')">Edit</button></td>
-              <td><button class="btn btn-ghost" style="padding:7px 12px; font-size:12.5px;" onclick="armDelete(this,'booking','${b.id}')">Hapus</button></td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  }
-
-  if(bookings.length===0){ list.innerHTML = `<div class="empty">Belum ada pemesanan masuk.</div>`; return; }
-  renderBookingsTable(bookings);
-
-  // wire up search
-  const searchEl = document.getElementById('bookingsSearch');
-  if(searchEl){
-    searchEl.addEventListener('input', (e)=>{
-      const q = (e.target.value || '').toLowerCase();
-      const filtered = bookings.filter(b=>{
-        return (b.nama||'').toLowerCase().includes(q)
-          || (b.code||b.id||'').toLowerCase().includes(q)
-          || (b.isiEvent||'').toLowerCase().includes(q)
-          || (b.tempat||'').toLowerCase().includes(q)
-          || (b.tanggal||'').toLowerCase().includes(q)
-          || (b.jam||'').toLowerCase().includes(q)
-          || (b.catatan||'').toLowerCase().includes(q);
-      });
-      renderBookingsTable(filtered);
-    });
-  }
+  const listEl = document.getElementById('bookingsList'); function renderTable(items){ if(items.length===0){ listEl.innerHTML='<div class="pass">Belum ada pemesanan.</div>'; return; } listEl.innerHTML = '<table><thead><tr><th>ID</th><th>Nama</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Jam</th><th></th></tr></thead><tbody>'+ items.map(b=>`<tr><td><span class="tag">${b.code}</span></td><td>${b.nama}</td><td>${b.isiEvent}</td><td>${b.tempat}</td><td>${b.tanggal}</td><td>${b.jam||'-'}</td><td><button class="btn btn-ghost" onclick="startEdit('${b.id}')">Edit</button>&nbsp;<button class="btn btn-ghost" onclick="jumpToInvoice('${b.id}')">Invoice</button>&nbsp;<button class="btn btn-ghost" onclick="armDelete(this,'booking','${b.id}')">Hapus</button></td></tr>`).join('') + '</tbody></table>'; }
+  renderTable(bookings);
+  const search = document.getElementById('bookingsSearch'); search.addEventListener('input',(e)=>{ const q=(e.target.value||'').toLowerCase(); const f=bookings.filter(b=> (b.nama||'').toLowerCase().includes(q) || (b.code||'').toLowerCase().includes(q) || (b.isiEvent||'').toLowerCase().includes(q) || (b.tempat||'').toLowerCase().includes(q) ); renderTable(f); });
 }
-function jumpToInvoice(bookingId){ adminTab='invoice'; renderAdmin(); setTimeout(()=>{ const sel=document.getElementById('inv_booking'); if(sel){ sel.value=bookingId; sel.dispatchEvent(new Event('change')); const h=document.getElementById('inv_harga'); if(h) h.focus(); } }, 250); }
+function startEdit(id){ editingBookingId = id; renderAdminTab(); }
+function cancelEditBooking(){ editingBookingId = null; renderAdminTab(); }
+async function saveBookingEdit(id){ const nama=document.getElementById('eb_nama').value.trim(); const noWa=document.getElementById('eb_wa').value.trim(); const isiEvent=document.getElementById('eb_isievent').value.trim(); const tempat=document.getElementById('eb_tempat').value.trim(); const tanggal=document.getElementById('eb_tanggal').value; const jam=document.getElementById('eb_jam').value; const catatan=document.getElementById('eb_catatan').value.trim(); if(!nama||!tempat||!tanggal||!jam){ toast('Lengkapi Nama, Tempat, Tanggal, Jam'); return; } const existing = await sGet('booking:'+id); const updated = Object.assign({}, existing, { nama, noWa, isiEvent, tempat, tanggal, jam, catatan }); await sSet('booking:'+id, updated); toast('Tersimpan'); editingBookingId=null; renderAdminTab(); }
 
-/* ---- Tab: Calendar ---- */
-let calMonth = new Date().getMonth();
-let calYear = new Date().getFullYear();
+/* Calendar: show bookings + invoices */
+let calMonth = new Date().getMonth(); let calYear = new Date().getFullYear();
+async function renderCalendar(mount){ const bookings = await getAllBookings(); const invoices = await getAllInvoices(); mount.innerHTML = '<h2>Kalender</h2><div id="calArea"></div><div id="dayEvents" style="margin-top:12px"></div>'; drawCalendar(bookings,invoices); }
+function drawCalendar(bookings,invoices){ const area=document.getElementById('calArea'); const firstDay=new Date(calYear,calMonth,1); const startOffset=(firstDay.getDay()+6)%7; const daysInMonth=new Date(calYear,calMonth+1,0).getDate(); const byDate={}; bookings.forEach(b=>{ (byDate[b.tanggal]=byDate[b.tanggal]||{bookings:[],invoices:[]}).bookings.push(b); }); invoices.forEach(i=>{ const t=i.booking && i.booking.tanggal; if(t) (byDate[t]=byDate[t]||{bookings:[],invoices:[]}).invoices.push(i); }); window._calDateMap = byDate; let html='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><button class="btn btn-ghost" onclick="calNav(-1)">←</button><div style="flex:1;font-weight:600">'+['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][calMonth]+' '+calYear+'</div><button class="btn btn-ghost" onclick="calNav(1)">→</button></div>'; html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">' + ['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map(d=>`<div style="text-align:center;color:var(--muted);font-size:12px">${d}</div>`).join(''); for(let i=0;i<startOffset;i++) html += '<div></div>'; const today = new Date().toISOString().slice(0,10); for(let d=1;d<=daysInMonth;d++){ const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const has = byDate[dateStr]; html += `<div style="padding:8px;border-radius:8px;border:1px solid var(--line);background:${has? '#fff5': 'transparent'};cursor:${has? 'pointer':'default'}" ${has?`onclick="showDayEvents('${dateStr}')"`:''}>${d}${has?'<div style="width:8px;height:8px;background:var(--gold);border-radius:50%;position:absolute;margin-top:28px;margin-left:48px"></div>':''}</div>`; } html += '</div>'; area.innerHTML = html; }
+function calNav(dir){ calMonth+=dir; if(calMonth<0){calMonth=11;calYear--;} if(calMonth>11){calMonth=0;calYear++} drawCalendar(window._calBookings || [], window._calInvoices || []); }
+function showDayEvents(dateStr){ const bucket = window._calDateMap && window._calDateMap[dateStr] || {bookings:[],invoices:[]}; let html = `<h3>Acara ${dateStr}</h3>`; if(bucket.bookings.length===0 && bucket.invoices.length===0){ html += '<div class="pass">Tidak ada acara.</div>'; } bucket.bookings.forEach(b=>{ html += `<div class="pass" style="margin-bottom:8px"><div><b>${b.nama}</b> · ${b.isiEvent} · ${b.tempat}</div><div style="color:var(--muted)">WA:${b.noWa} · Jam:${b.jam||'-'}</div><div style="margin-top:8px"><button class="btn btn-ghost" onclick="startEdit('${b.id}')">Edit</button> <button class="btn btn-primary" onclick="jumpToInvoice('${b.id}')">Invoice</button></div></div>` }); bucket.invoices.forEach(i=>{ html += `<div class="pass" style="margin-bottom:8px"><div><b>${i.id}</b> · ${i.booking? i.booking.nama : '-'}</div><div style="color:var(--muted)">${i.layanan||''} · ${i.harga? 'Rp '+i.harga:''}</div></div>` }); document.getElementById('dayEvents').innerHTML = html; }
 
-async function renderCalendarTab(mount){
-  mount.innerHTML = `<h2>Kalender Event</h2><p class="sub">Tanggal bertitik emas menandakan ada acara terjadwal.</p><div id="calArea">Memuat…</div>`;
-  const [bookings, invoices] = await Promise.all([getAllBookings(), getAllInvoices()]);
-  drawCalendar(bookings, invoices);
-}
-function drawCalendar(bookings, invoices){
-  const area = document.getElementById('calArea');
-  const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const firstDay = new Date(calYear, calMonth, 1);
-  const startOffset = (firstDay.getDay()+6)%7; // Senin=0
-  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-  const byDate = {};
-  bookings.forEach(b=>{ (byDate[b.tanggal] = byDate[b.tanggal]||{bookings:[], invoices:[]}).bookings.push(b); });
-  (invoices || []).forEach(inv=>{
-    const tanggal = inv.booking && inv.booking.tanggal;
-    if(tanggal) (byDate[tanggal] = byDate[tanggal]||{bookings:[], invoices:[]}).invoices.push(inv);
-  });
-  // save map for showDayEvents
-  window._calDateMap = byDate;
-  window._calBookings = bookings || [];
-  window._calInvoices = invoices || [];
-  const todayStr = new Date().toISOString().slice(0,10);
-
-  let cells = '';
-  for(let i=0;i<startOffset;i++) cells += `<div class="cal-cell"></div>`;
-  for(let d=1; d<=daysInMonth; d++){
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const has = byDate[dateStr];
-    cells += `<div class="cal-cell inmonth ${has?'has-event':''} ${dateStr===todayStr?'today':''}" ${has?`onclick="showDayEvents('${dateStr}')"`:''}>${d}${has?'<span class="dot"></span>':''}</div>`;
-  }
-  area.innerHTML = `
-    <div class="cal-head">
-      <button class="btn btn-ghost" style="padding:7px 12px;" onclick="calNav(-1)">←</button>
-      <h3>${monthNames[calMonth]} ${calYear}</h3>
-      <button class="btn btn-ghost" style="padding:7px 12px;" onclick="calNav(1)">→</button>
-    </div>
-    <div class="cal-grid">
-      ${['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
-      ${cells}
-    </div>
-    <div id="dayEvents" style="margin-top:20px;"></div>
-  `;
-}
-function calNav(dir){
-  calMonth += dir;
-  if(calMonth<0){calMonth=11; calYear--;}
-  if(calMonth>11){calMonth=0; calYear++;}
-  drawCalendar(window._calBookings || [], window._calInvoices || []);
-}
-function showDayEvents(dateStr){
-  const bucket = (window._calDateMap || {})[dateStr] || {bookings:[], invoices:[]};
-  const itemsB = bucket.bookings || [];
-  const itemsI = bucket.invoices || [];
-
-  let html = `<h3 style="font-size:15px; margin-bottom:10px;">Acara ${fmtDate(dateStr)}</h3>`;
-  if(itemsB.length===0 && itemsI.length===0) html += `<div class="empty">Tidak ada acara atau invoice pada tanggal ini.</div>`;
-
-  itemsB.forEach(b=>{
-    html += `<div class="card" style="margin-bottom:8px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
-      <div><b>${b.nama}</b> — ${b.isiEvent ? b.isiEvent+' · ' : ''}${b.tempat}<br><span style="color:var(--muted); font-size:13px;">WA: ${b.noWa||'-'} · ${b.catatan||'-'}${b.jam ? ' · Jam: '+b.jam : ''}</span></div>
-      <div style="display:flex; gap:8px; flex-shrink:0;">
-        <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="editBooking('${b.id}')">Edit</button>
-        <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="armDelete(this,'booking','${b.id}')">Hapus</button>
-        <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" onclick="jumpToInvoice('${b.id}')">Buat/lihat Invoice</button>
-      </div>
-    </div>`;
-  });
-
-  itemsI.forEach(inv=>{
-    html += `<div class="card" style="margin-bottom:8px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between;">
-      <div><b>${inv.id}</b> — ${inv.booking ? inv.booking.nama : '-'}<br><span style="color:var(--muted); font-size:13px;">${inv.layanan||''} · ${fmtIDR(inv.harga)} · ${inv.status==='lunas' ? 'Lunas' : 'Belum Lunas'}</span></div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-ghost" onclick="reopenInvoice('${inv.id}')">Lihat</button>
-        <button class="btn btn-ghost" onclick="editInvoice('${inv.id}')">Edit</button>
-      </div>
-    </div>`;
-  });
-
-  document.getElementById('dayEvents').innerHTML = html;
-}
-
-/* ---- Tab: Invoice ---- */
+/* Invoice tab (simple) */
 let editingInvoiceId = null;
-function editInvoice(id){ editingInvoiceId = id; renderAdmin(); }
-function cancelEditInvoice(){ editingInvoiceId = null; renderAdmin(); }
+async function renderInvoice(mount){ const bookings = await getAllBookings(); const invoices = await getAllInvoices(); mount.innerHTML = `
+  <h2>Invoice</h2>
+  <div style="margin-bottom:12px;display:flex;gap:8px"><input id="invSearch" placeholder="Cari invoice"><button class="btn btn-ghost" id="invReset">Reset</button></div>
+  <div class="pass" style="margin-bottom:12px">
+    <label>Pilih Pemesanan</label>
+    <select id="inv_booking"><option value="">— pilih —</option>${bookings.map(b=>`<option value="${b.id}">${b.code} · ${b.nama} · ${b.tempat} · ${b.tanggal} ${b.jam? '· '+b.jam : ''}</option>`).join('')}</select>
+    <input id="inv_layanan" placeholder="Nama layanan" style="margin-top:8px">
+    <div style="display:flex;gap:8px;margin-top:8px"><input id="inv_harga" type="number" placeholder="Harga (Rp)"><select id="inv_status"><option value="belum_lunas">Belum Lunas</option><option value="lunas">Lunas</option></select></div>
+    <textarea id="inv_catatan" placeholder="Catatan" style="margin-top:8px"></textarea>
+    <div style="margin-top:8px"><button class="btn" id="createInvBtn">Buat Invoice</button></div>
+  </div>
+  <div id="invList"></div>`;
+  document.getElementById('createInvBtn').addEventListener('click', async ()=>{ const bookingId=document.getElementById('inv_booking').value; const layanan=document.getElementById('inv_layanan').value.trim(); const harga=document.getElementById('inv_harga').value; const status=document.getElementById('inv_status').value; const catatan=document.getElementById('inv_catatan').value.trim(); if(!bookingId||!layanan||!harga){ toast('Lengkapi pilihan pemesanan, layanan, dan harga'); return; } const booking = bookings.find(b=>b.id===bookingId); const invId = 'INV-'+(booking?booking.code:uid()); const inv = { id:invId, bookingId, booking, layanan, harga: Number(harga), status, catatan, createdAt: Date.now() }; await sSet('invoice:'+invId, inv); toast('Invoice dibuat'); renderInvoice(mount); });
+  function renderList(list){ const el=document.getElementById('invList'); if(!list || list.length===0){ el.innerHTML='<div class="pass">Belum ada invoice.</div>'; return; } el.innerHTML = list.map(inv=>`<div class="pass" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><div><b>${inv.id}</b> · ${inv.booking? inv.booking.nama: '-'}</div><div><button class="btn btn-ghost" onclick='sendInvoice("${inv.id}")'>Kirim WA</button> <button class="btn btn-ghost" onclick='editInv("${inv.id}")'>Edit</button></div></div><div style="color:var(--muted)">${inv.layanan||''} · Rp ${inv.harga||0} · ${inv.status||''}</div></div>`).join(''); }
+  renderList(invoices);
+  document.getElementById('invReset').addEventListener('click', ()=>{ document.getElementById('invSearch').value=''; renderInvoice(mount); });
+  document.getElementById('invSearch').addEventListener('input',(e)=>{ const q=(e.target.value||'').toLowerCase(); renderList(invoices.filter(inv=> (inv.id||'').toLowerCase().includes(q) || (inv.booking && inv.booking.nama||'').toLowerCase().includes(q) || (inv.layanan||'').toLowerCase().includes(q) )); });
+}
+function sendInvoice(id){ alert('Membuka WhatsApp untuk invoice '+id); }
+function editInv(id){ alert('Edit invoice: '+id); }
 
-async function renderInvoiceTab(mount){
-  mount.innerHTML = `<h2>Invoice</h2><p class="sub">Buat invoice dari data pemesanan, lengkapi harga dan QRIS pembayaran.</p>
-    <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
-      <input id="invSearch" placeholder="Cari invoice (ID, nama, layanan, tempat)" style="flex:1; padding:10px; border-radius:10px; border:1px solid var(--line);">
-      <button class="btn btn-ghost" onclick="renderInvoiceTab(document.getElementById('mainArea'))">Reset</button>
-    </div>
-    <div id="invArea">Memuat…</div>`;
-  const [bookings, invoices] = await Promise.all([getAllBookings(), getAllInvoices()]);
-  const area = document.getElementById('invArea');
-  const editingInv = editingInvoiceId ? invoices.find(i=>i.id===editingInvoiceId) : null;
-  area.innerHTML = `
-    <div class="card">
-      <div class="form-grid">
-        ${editingInv ? `<div class="eyebrow" style="color:var(--gold);">Mengedit ${editingInv.id}</div>` : ''}
-        <div>
-          <label>Pilih Pemesanan</label>
-          <select id="inv_booking" ${editingInv?'disabled':''}>
-            <option value="">— pilih —</option>
-            ${bookings.map(b=>`<option value="${b.id}" ${editingInv && editingInv.bookingId===b.id ? 'selected':''}>${b.code || b.id} · ${b.nama} · ${b.tempat} · ${fmtDate(b.tanggal)}${b.jam ? ' · '+b.jam : ''}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label>Nama Layanan</label>
-          <input type="text" id="inv_layanan" placeholder="Contoh: Paket 1 Kamera 2" value="${editingInv ? (editingInv.layanan || (editingInv.booking && editingInv.booking.tempat ? 'Jasa Live Streaming' : '')) : ''}">
-        </div>
-        <div class="row2">
-          <div>
-            <label>Harga (Rp)</label>
-            <input type="number" id="inv_harga" placeholder="Contoh: 750000" value="${editingInv ? editingInv.harga : ''}">
-          </div>
-          <div>
-            <label>Status Pembayaran</label>
-            <select id="inv_status">
-              <option value="belum_lunas" ${editingInv && editingInv.status==='lunas' ? '' : 'selected'}>Belum Lunas</option>
-              <option value="lunas" ${editingInv && editingInv.status==='lunas' ? 'selected' : ''}>Lunas</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label>Upload QRIS Pembayaran ${editingInv?'(kosongkan jika tidak diganti)':''}</label>
-          <input type="file" id="inv_qris" accept="image/*">
-        </div>
-        <img id="qrisPreview" class="qris-preview" src="${editingInv && editingInv.qris ? editingInv.qris : ''}" style="display:${editingInv && editingInv.qris ? 'block':'none'};">
-        <div>
-          <label>Rekening Pembayaran untuk Invoice Ini</label>
-          ${ADMIN_REKENING.length===0 ? `<p class="sub" style="margin:0;">Belum ada rekening. Tambahkan dulu di tab Pengaturan.</p>` : `
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            ${ADMIN_REKENING.map(r=>`
-              <label style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ivory); margin:0; font-weight:400;">
-                <input type="checkbox" class="inv_rek_chk" value="${r.id}" style="width:auto;" ${editingInv && editingInv.rekeningIds && editingInv.rekeningIds.includes(r.id) ? 'checked':''}>
-                ${r.bank} — ${r.noRek}${r.atasNama ? ' (a.n. '+r.atasNama+')' : ''}
-              </label>
-            `).join('')}
-          </div>`}
-        </div>
-        <div>
-          <label>Catatan Invoice</label>
-          <textarea id="inv_catatan" rows="2" placeholder="Contoh: DP/Pelunasan">${editingInv ? (editingInv.catatan||'') : ''}</textarea>
-        </div>
-        <div class="action-row">
-          <button class="btn btn-primary" id="createInvBtn">${editingInv ? 'Simpan Perubahan' : 'Buat Invoice'}</button>
-          ${editingInv ? `<button class="btn btn-ghost" onclick="cancelEditInvoice()">Batal</button>` : ''}
-        </div>
-      </div>
-    </div>
-    <h3 style="margin:28px 0 14px; font-size:15px; color:var(--muted);">Riwayat Invoice</h3>
-    <div id="invList">${invoices.length===0 ? `<div class="empty">Belum ada invoice.</div>` : ''}</div>
-  `;
-  let qrisBase64 = editingInv ? (editingInv.qris || '') : '';
-  document.getElementById('inv_qris').addEventListener('change', (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    if(file.size > 4*1024*1024){ toast('Ukuran gambar QRIS terlalu besar (maks ~4MB).'); e.target.value=''; return; }
-    const reader = new FileReader();
-    reader.onload = ()=>{ qrisBase64 = reader.result; const img=document.getElementById('qrisPreview'); img.src=qrisBase64; img.style.display='block'; };
-    reader.readAsDataURL(file);
-  });
-  document.getElementById('createInvBtn').addEventListener('click', async ()=>{
-    const bookingId = editingInv ? editingInv.bookingId : document.getElementById('inv_booking').value;
-    const layanan = document.getElementById('inv_layanan').value.trim();
-    const harga = document.getElementById('inv_harga').value;
-    const status = document.getElementById('inv_status').value;
-    const catatan = document.getElementById('inv_catatan').value.trim();
-    if(!bookingId || !layanan || !harga){ toast('Pilih pemesanan, isi Nama Layanan, dan isi harga terlebih dahulu.'); return; }
-    const booking = bookings.find(b=>b.id===bookingId);
-    const rekeningIds = Array.from(document.querySelectorAll('.inv_rek_chk:checked')).map(el=>el.value);
-    const rekeningSnapshot = ADMIN_REKENING.filter(r=>rekeningIds.includes(r.id));
-    if(editingInv){
-      const updated = Object.assign({}, editingInv, { layanan, harga: Number(harga), status, catatan, qris: qrisBase64, booking, rekeningIds, rekening: rekeningSnapshot });
-      await sSet('invoice:'+editingInv.id, updated);
-      cacheInvoice(updated);
-      toast('Invoice diperbarui.');
-      editingInvoiceId = null;
-      renderInvoicePreview(updated);
-    } else {
-      const invId = 'INV-' + (booking && booking.code ? booking.code : bookingId);
-      const invoice = { id: invId, bookingId, booking, layanan, harga: Number(harga), status, catatan, qris: qrisBase64, rekeningIds, rekening: rekeningSnapshot, createdAt: Date.now() };
-      await sSet('invoice:'+invId, invoice);
-      cacheInvoice(invoice);
-      toast('Invoice berhasil dibuat.');
-      renderInvoicePreview(invoice);
-    }
-  });
-  renderInvoiceHistory(invoices);
+/* Settings */
+function renderSettings(mount){ mount.innerHTML = `
+  <h2>Pengaturan</h2>
+  <div class="pass">
+    <label>Nomor WA Admin</label>
+    <input id="set_admin_wa" value="${ADMIN_WA_NUMBER}">
+    <label style="margin-top:8px">Kata Sandi Admin</label>
+    <input id="set_admin_pw" value="${ADMIN_PASSWORD}">
+    <div style="margin-top:8px"><button class="btn" id="saveSettingsBtn">Simpan</button></div>
+  </div>`;
+  document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{ ADMIN_WA_NUMBER = document.getElementById('set_admin_wa').value.trim()||ADMIN_WA_NUMBER; ADMIN_PASSWORD = document.getElementById('set_admin_pw').value.trim()||ADMIN_PASSWORD; toast('Disimpan'); renderAdminTab(); }); }
 
-  // invoice search
-  const invSearch = document.getElementById('invSearch');
-  if(invSearch){
-    invSearch.addEventListener('input', (e)=>{
-      const q = (e.target.value || '').toLowerCase();
-      const filtered = invoices.filter(inv=>{
-        return (inv.id||'').toLowerCase().includes(q)
-          || (inv.booking && inv.booking.nama || '').toLowerCase().includes(q)
-          || (inv.layanan||'').toLowerCase().includes(q)
-          || (inv.booking && inv.booking.tempat || '').toLowerCase().includes(q);
-      });
-      renderInvoiceHistory(filtered);
-    });
-  }
-}
-function renderInvoiceHistory(invoices){
-  const list = document.getElementById('invList');
-  if(!list) return;
-  if(!invoices || invoices.length===0){ list.innerHTML = `<div class="empty">Belum ada invoice.</div>`; return; }
-  list.innerHTML = invoices.map(inv=>`
-    <div class="card list-card" style="margin-bottom:10px;">
-      <div>
-        <b>${inv.id}</b> — ${inv.booking ? inv.booking.nama : '-'} <span class="tag" style="${inv.status==='lunas' ? 'background:rgba(31,122,84,0.14); color:var(--success);' : 'background:rgba(192,5[...]
-        <span style="color:var(--muted); font-size:13px;">${fmtIDR(inv.harga)} · ${new Date(inv.createdAt).toLocaleDateString('id-ID')}</span>
-      </div>
-      <div class="action-row inv-actions-desktop" style="flex-shrink:0;">
-        <button class="btn btn-primary" style="padding:8px 14px; font-size:12.5px;" id="waSendBtn_${inv.id}" onclick='sendInvoiceToCustomer(${JSON.stringify(inv.id)})'>📲 Kirim ke WA</button>
-        <button class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;" onclick='toggleInvoiceStatus(${JSON.stringify(inv.id)})'>${inv.status==='lunas' ? 'Tandai Belum Lunas' : 'Tandai Lunas'}</button>
-        <button class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;" onclick='reopenInvoice(${JSON.stringify(inv.id)})'>Lihat</button>
-        <button class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;" onclick='editInvoice(${JSON.stringify(inv.id)})'>Edit</button>
-        <button class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;" onclick='armDelete(this,"invoice", ${JSON.stringify(inv.id)})'>Hapus</button>
-      </div>
-      <select class="inv-actions-mobile" data-inv-id="${inv.id}">
-        <option value="">Pilih Aksi…</option>
-        <option value="send">📲 Kirim ke WA</option>
-        <option value="toggle">${inv.status==='lunas' ? '↩️ Tandai Belum Lunas' : '✅ Tandai Lunas'}</option>
-        <option value="view">👁️ Lihat</option>
-        <option value="edit">✏️ Edit</option>
-        <option value="delete">🗑️ Hapus</option>
-      </select>
-    </div>
-    <div id="waFallback_${inv.id}"></div>
-  `).join('');
-  // mobile actions listener
-  document.querySelectorAll('.inv-actions-mobile').forEach(sel=>{
-    sel.addEventListener('change', ()=>{
-      const id = sel.dataset.invId;
-      const action = sel.value;
-      sel.value = '';
-      if(action === 'send'){ sendInvoiceToCustomer(id); }
-      else if(action === 'toggle'){ toggleInvoiceStatus(id); }
-      else if(action === 'view'){ reopenInvoice(id); }
-      else if(action === 'edit'){ editInvoice(id); }
-      else if(action === 'delete'){ const btn = document.querySelector(`#waFallback_${id}`); armDelete(btn || {dataset:{}}, 'invoice', id); }
-    });
-  });
-}
+/* delete helper */
+function armDelete(btn, kind, id){ if(btn.dataset && btn.dataset.armed==='1'){ doDelete(kind,id); } else { btn.dataset.armed='1'; btn.dataset.orig=btn.textContent; btn.textContent='Klik lagi'; btn.classList.add('btn-ghost'); setTimeout(()=>{ btn.dataset.armed='0'; btn.textContent=btn.dataset.orig; },3500); } }
+async function doDelete(kind,id){ await sDelete((kind==='booking'?'booking:':'invoice:')+id); toast(kind+' dihapus'); renderAdminTab(); }
 
-/* utility stubs used above but defined elsewhere in the file */
-function renderInvoicePreview(inv){ // simplistic preview behavior
-  alert('Invoice dibuat / diperbarui: ' + inv.id);
-}
-function toggleInvoiceStatus(id){
-  (async()=>{
-    const inv = await sGet('invoice:'+id);
-    if(!inv) return toast('Invoice tidak ditemukan');
-    inv.status = inv.status === 'lunas' ? 'belum_lunas' : 'lunas';
-    await sSet('invoice:'+id, inv);
-    cacheInvoice(inv);
-    toast('Status invoice diperbarui.');
-    renderAdmin();
-  })();
-}
-function reopenInvoice(id){
-  const inv = INVOICE_CACHE[id];
-  if(inv){
-    // simple view: show invoice in an alert or navigate
-    alert(`Invoice ${inv.id}\nNama: ${inv.booking ? inv.booking.nama : '-'}\nHarga: ${fmtIDR(inv.harga)}\nStatus: ${inv.status}`);
-  } else {
-    toast('Invoice tidak ditemukan.');
-  }
-}
-
-/* ---- Settings tab & other helpers (kept unchanged) ---- */
-function renderSettingsTab(mount){
-  mount.innerHTML = `<h2>Pengaturan</h2><p class="sub">Atur nomer admin, password, dan daftar rekening pembayaran.</p>
-    <div class="card">
-      <div class="form-grid">
-        <div class="row2">
-          <div><label>Nomor WhatsApp Admin</label><input type="text" id="set_admin_wa" value="${ADMIN_WA_NUMBER}"></div>
-          <div><label>Kata Sandi Admin</label><input type="text" id="set_admin_pw" value="${ADMIN_PASSWORD}"></div>
-        </div>
-        <div>
-          <label>Daftar Rekening (format sederhana)</label>
-          <div id="rekeningList" style="display:flex; flex-direction:column; gap:8px;"></div>
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <input id="newRekBank" placeholder="Bank" style="flex:1;">
-            <input id="newRekNo" placeholder="No. Rek" style="flex:1;">
-            <input id="newRekNama" placeholder="a.n." style="flex:1;">
-            <button class="btn btn-primary" id="addRekBtn">Tambah</button>
-          </div>
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary" id="saveSettingsBtn">Simpan Pengaturan</button>
-        </div>
-      </div>
-    </div>`;
-  const rl = document.getElementById('rekeningList');
-  function renderRek(){
-    rl.innerHTML = ADMIN_REKENING.map(r=>`<div style="display:flex; gap:8px; align-items:center;"><div style="flex:1;">${r.bank} · ${r.noRek}${r.atasNama ? ' · a.n. '+r.atasNama : ''}</div><button class="btn btn-ghost" onclick="armDelete(this,'rekening','${r.id}')">Hapus</button></div>`).join('');
-  }
-  renderRek();
-  document.getElementById('addRekBtn').addEventListener('click', ()=>{
-    const bank = document.getElementById('newRekBank').value.trim();
-    const no = document.getElementById('newRekNo').value.trim();
-    const nama = document.getElementById('newRekNama').value.trim();
-    if(!bank || !no) return toast('Isi bank dan nomor rekening.');
-    ADMIN_REKENING.push({ id: uid(), bank, noRek: no, atasNama: nama });
-    renderRek();
-  });
-  document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
-    ADMIN_WA_NUMBER = document.getElementById('set_admin_wa').value.trim() || ADMIN_WA_NUMBER;
-    ADMIN_PASSWORD = document.getElementById('set_admin_pw').value.trim() || ADMIN_PASSWORD;
-    await saveSettings();
-    toast('Pengaturan disimpan.');
-    renderAdmin();
-  });
-}
-
-/* End of script */
 </script>
 </body>
 </html>
