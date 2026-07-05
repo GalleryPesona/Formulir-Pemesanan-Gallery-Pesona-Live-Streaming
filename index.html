@@ -1220,7 +1220,7 @@ async function renderKeuanganTab(mount){
           </div>
           <div>
             <label>Keterangan</label>
-            <input type="text" id="kas_keterangan" placeholder="Contoh: Beli baterai kamera" value="${editingKas ? (editingKas.keterangan||'').replace(/"/g,'&quot;') : ''}">
+            <input type="text" id="kas_keterangan" placeholder="${editingKas ? (editingKas.type==='masuk' ? 'Contoh: DP Booking a.n. Budi' : 'Contoh: Beli baterai kamera') : 'Contoh: DP Booking a.n. Budi'}" value="${editingKas ? (editingKas.keterangan||'').replace(/"/g,'&quot;') : ''}">
           </div>
         </div>
         <div class="action-row">
@@ -1234,6 +1234,11 @@ async function renderKeuanganTab(mount){
     <div id="kasList">${items.length===0 ? `<div class="empty">Belum ada transaksi keuangan.</div>` : ''}</div>
   `;
   window._allKas = items;
+  const kasTypeSelect = document.getElementById('kas_type');
+  const kasKeteranganInput = document.getElementById('kas_keterangan');
+  kasTypeSelect.addEventListener('change', ()=>{
+    kasKeteranganInput.placeholder = kasTypeSelect.value==='masuk' ? 'Contoh: DP Booking a.n. Budi' : 'Contoh: Beli baterai kamera';
+  });
   const kasSearchInput = document.getElementById('kasSearchInput');
   kasSearchInput.addEventListener('input', ()=>{
     kasSearchQuery = kasSearchInput.value;
