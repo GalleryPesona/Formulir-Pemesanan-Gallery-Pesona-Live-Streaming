@@ -234,6 +234,7 @@
     .mobile-select{max-width:170px; font-size:12.5px;}
     table{font-size:11.5px;}
     th, td{padding:7px 6px;}
+    .card{padding:18px;}
   }
   #mainArea{overflow-x:auto;}
 </style>
@@ -364,6 +365,7 @@ function buildInvoiceWaPlainText(inv){
     `Nama: ${b.nama || '-'}\n`+
     `Tempat Event: ${b.tempat || '-'}\n`+
     `Tanggal Event: ${fmtDate(b.tanggal)}\n`+
+    `Jam Event: ${b.jamEvent || '-'}\n`+
     `Total Tagihan: ${fmtIDR(inv.harga)}\n`+
     `Status Pembayaran: ${inv.status==='lunas' ? 'LUNAS' : 'BELUM LUNAS'}\n`+
     (inv.catatan ? `Catatan: ${inv.catatan}\n` : '')+
@@ -524,13 +526,19 @@ function renderForm(){
               <label>Tempat Event</label>
               <input type="text" id="f_tempat" placeholder="Contoh: Gedung Serbaguna Kudus">
             </div>
-            <div>
-              <label>Tanggal Event</label>
-              <input type="date" id="f_tanggal">
+            <div class="row2">
+              <div>
+                <label>Tanggal Event</label>
+                <input type="date" id="f_tanggal">
+              </div>
+              <div>
+                <label>Jam Event</label>
+                <input type="time" id="f_jam">
+              </div>
             </div>
             <div>
               <label>Catatan (opsional)</label>
-              <textarea id="f_catatan" rows="3" placeholder="Jam mulai, kebutuhan khusus, dll."></textarea>
+              <textarea id="f_catatan" rows="3" placeholder="Kebutuhan khusus, dll."></textarea>
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top:6px;">Kirim Pemesanan</button>
           </form>
@@ -550,8 +558,9 @@ async function onSubmitBooking(e){
   const isiEvent = document.getElementById('f_isievent').value.trim();
   const tempat = document.getElementById('f_tempat').value.trim();
   const tanggal = document.getElementById('f_tanggal').value;
+  const jamEvent = document.getElementById('f_jam').value;
   const catatan = document.getElementById('f_catatan').value.trim();
-  if(!nama || !noWa || !isiEvent || !tempat || !tanggal){ toast('Mohon isi Nama, Nomor WA, Event, Tempat Event, dan Tanggal Event.'); return; }
+  if(!nama || !noWa || !isiEvent || !tempat || !tanggal || !jamEvent){ toast('Mohon isi Nama, Nomor WA, Event, Tempat Event, Tanggal Event, dan Jam Event.'); return; }
 
   const submitBtn = e.target.querySelector('button[type="submit"]');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Mengirim…'; }
@@ -561,7 +570,7 @@ async function onSubmitBooking(e){
   let seq = 1;
   try{ seq = (await getAllBookings()).length + 1; }catch(err){ console.warn('Gagal menghitung nomor urut, pakai 1', err); }
   const code = `${String(seq).padStart(3,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
-  const booking = { id, code, nama, noWa, isiEvent, tempat, tanggal, catatan, createdAt: now.getTime(), status:'baru' };
+  const booking = { id, code, nama, noWa, isiEvent, tempat, tanggal, jamEvent, catatan, createdAt: now.getTime(), status:'baru' };
 
   try{
     await sSet('booking:'+id, booking);
@@ -577,6 +586,7 @@ async function onSubmitBooking(e){
     `Event: ${isiEvent}\n`+
     `Tempat Event: ${tempat}\n`+
     `Tanggal Event: ${fmtDate(tanggal)}\n`+
+    `Jam Event: ${jamEvent || '-'}\n`+
     `Catatan: ${catatan || '-'}\n\n`+
     `ID Booking: ${code}`
   );
@@ -614,6 +624,7 @@ function renderConfirmation(b, waUrl, popupBlocked){
           <div class="field-line"><span>Event</span><span>${b.isiEvent || '-'}</span></div>
           <div class="field-line"><span>Tempat Event</span><span>${b.tempat}</span></div>
           <div class="field-line"><span>Tanggal Event</span><span>${fmtDate(b.tanggal)}</span></div>
+          <div class="field-line"><span>Jam Event</span><span>${b.jamEvent || '-'}</span></div>
           <div class="field-line"><span>Catatan</span><span>${b.catatan || '-'}</span></div>
           ${popupBlocked ? `<button class="btn btn-primary" style="width:100%; margin-top:20px;" onclick="window.open('${waUrl}','_blank')">Buka WhatsApp Admin</button>` : ``}
           <p class="foot-note" style="margin-top:20px;">Jangan lupa screenshoot halaman ini dan kirim ke admin (${formatWaDisplay(ADMIN_WA_NUMBER)}) sebagai konfirmasi pemesanan.</p>
@@ -709,10 +720,11 @@ async function saveBookingEdit(id){
   const isiEvent = document.getElementById('eb_isievent').value.trim();
   const tempat = document.getElementById('eb_tempat').value.trim();
   const tanggal = document.getElementById('eb_tanggal').value;
+  const jamEvent = document.getElementById('eb_jam').value;
   const catatan = document.getElementById('eb_catatan').value.trim();
   if(!nama || !tempat || !tanggal){ toast('Mohon lengkapi Nama, Tempat, dan Tanggal.'); return; }
   const existing = await sGet('booking:'+id);
-  const updated = Object.assign({}, existing, { nama, noWa, isiEvent, tempat, tanggal, catatan });
+  const updated = Object.assign({}, existing, { nama, noWa, isiEvent, tempat, tanggal, jamEvent, catatan });
   await sSet('booking:'+id, updated);
   toast('Perubahan pemesanan disimpan.');
   editingBookingId = null;
@@ -742,9 +754,25 @@ async function doDelete(kind, id){
   renderAdmin();
 }
 
+let bookingSearchQuery = '';
+function filterBookings(bookings, q){
+  if(!q) return bookings;
+  const s = q.toLowerCase();
+  return bookings.filter(b => [b.code, b.id, b.nama, b.noWa, b.isiEvent, b.tempat, b.catatan]
+    .some(v => (v||'').toString().toLowerCase().includes(s)));
+}
 async function renderBookingsTab(mount){
-  mount.innerHTML = `<h2>Data Pemesanan</h2><p class="sub">Semua data yang masuk dari formulir pelanggan.</p><div id="editBookingArea"></div><div id="bookingsList">Memuat…</div>`;
+  mount.innerHTML = `<h2>Data Pemesanan</h2><p class="sub">Semua data yang masuk dari formulir pelanggan.</p>
+    <div style="margin-bottom:16px;"><input type="text" id="bookingSearchInput" placeholder="Cari nama, ID booking, WA, event, atau tempat…" value="${bookingSearchQuery.replace(/"/g,'&quot;')}"></div>
+    <div id="editBookingArea"></div><div id="bookingsList">Memuat…</div>`;
   const bookings = await getAllBookings();
+  window._allBookings = bookings;
+
+  const searchInput = document.getElementById('bookingSearchInput');
+  searchInput.addEventListener('input', ()=>{
+    bookingSearchQuery = searchInput.value;
+    renderBookingsList(filterBookings(window._allBookings, bookingSearchQuery));
+  });
 
   if(editingBookingId){
     const eb = bookings.find(b=>b.id===editingBookingId);
@@ -763,9 +791,12 @@ async function renderBookingsTab(mount){
             </div>
             <div class="row2">
               <div><label>Tanggal Event</label><input type="date" id="eb_tanggal" value="${eb.tanggal||''}"></div>
+              <div><label>Jam Event</label><input type="time" id="eb_jam" value="${eb.jamEvent||''}"></div>
+            </div>
+            <div class="row2">
               <div><label>Catatan</label><input type="text" id="eb_catatan" value="${(eb.catatan||'').replace(/"/g,'&quot;')}"></div>
             </div>
-            <div style="display:flex; gap:10px;">
+            <div class="action-row">
               <button class="btn btn-primary" onclick="saveBookingEdit('${eb.id}')">Simpan Perubahan</button>
               <button class="btn btn-ghost" onclick="cancelEditBooking()">Batal</button>
             </div>
@@ -775,11 +806,15 @@ async function renderBookingsTab(mount){
     }
   }
 
+  renderBookingsList(filterBookings(bookings, bookingSearchQuery));
+}
+function renderBookingsList(bookings){
   const list = document.getElementById('bookingsList');
-  if(bookings.length===0){ list.innerHTML = `<div class="empty">Belum ada pemesanan masuk.</div>`; return; }
+  if(!list) return;
+  if(bookings.length===0){ list.innerHTML = `<div class="empty">Tidak ada pemesanan yang cocok.</div>`; return; }
   list.innerHTML = `
     <table>
-      <thead><tr><th>ID Booking</th><th>Nama</th><th>Nomor WA</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Catatan</th><th>Diterima</th><th colspan="3"></th></tr></thead>
+      <thead><tr><th>ID Booking</th><th>Nama</th><th>Nomor WA</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Jam</th><th>Catatan</th><th>Diterima</th><th colspan="3"></th></tr></thead>
       <tbody>
         ${bookings.map(b=>`
           <tr>
@@ -789,6 +824,7 @@ async function renderBookingsTab(mount){
             <td>${b.isiEvent || '-'}</td>
             <td>${b.tempat}</td>
             <td>${fmtDate(b.tanggal)}</td>
+            <td>${b.jamEvent || '-'}</td>
             <td style="max-width:220px;">${b.catatan || '-'}</td>
             <td>${new Date(b.createdAt).toLocaleDateString('id-ID')}</td>
             <td><button class="btn btn-ghost" style="padding:7px 12px; font-size:12.5px;" onclick="jumpToInvoice('${b.id}')">Invoice</button></td>
@@ -853,7 +889,7 @@ function showDayEvents(dateStr){
   document.getElementById('dayEvents').innerHTML = `
     <h3 style="font-size:15px; margin-bottom:10px;">Acara ${fmtDate(dateStr)}</h3>
     ${items.map(b=>`<div class="card" style="margin-bottom:8px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
-      <div><b>${b.nama}</b> — ${b.isiEvent ? b.isiEvent+' · ' : ''}${b.tempat}<br><span style="color:var(--muted); font-size:13px;">WA: ${b.noWa||'-'} · ${b.catatan||'-'}</span></div>
+      <div><b>${b.nama}</b> — ${b.isiEvent ? b.isiEvent+' · ' : ''}${b.tempat}${b.jamEvent ? ' · Jam '+b.jamEvent : ''}<br><span style="color:var(--muted); font-size:13px;">WA: ${b.noWa||'-'} · ${b.catatan||'-'}</span></div>
       <div style="display:flex; gap:8px; flex-shrink:0;">
         <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="editBooking('${b.id}')">Edit</button>
         <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="armDelete(this,'booking','${b.id}')">Hapus</button>
@@ -867,6 +903,13 @@ let editingInvoiceId = null;
 function editInvoice(id){ editingInvoiceId = id; renderAdmin(); }
 function cancelEditInvoice(){ editingInvoiceId = null; renderAdmin(); }
 
+let invoiceSearchQuery = '';
+function filterInvoices(invoices, q){
+  if(!q) return invoices;
+  const s = q.toLowerCase();
+  return invoices.filter(inv => [inv.id, inv.layanan, inv.catatan, inv.booking && inv.booking.nama, inv.booking && inv.booking.tempat, inv.status==='lunas' ? 'lunas' : 'belum lunas']
+    .some(v => (v||'').toString().toLowerCase().includes(s)));
+}
 async function renderInvoiceTab(mount){
   mount.innerHTML = `<h2>Invoice</h2><p class="sub">Buat invoice dari data pemesanan, lengkapi harga dan QRIS pembayaran.</p><div id="invArea">Memuat…</div>`;
   const [bookings, invoices] = await Promise.all([getAllBookings(), getAllInvoices()]);
@@ -880,7 +923,7 @@ async function renderInvoiceTab(mount){
           <label>Pilih Pemesanan</label>
           <select id="inv_booking" ${editingInv?'disabled':''}>
             <option value="">— pilih —</option>
-            ${bookings.map(b=>`<option value="${b.id}" ${editingInv && editingInv.bookingId===b.id ? 'selected':''}>${b.code || b.id} · ${b.nama} · ${b.tempat} · ${fmtDate(b.tanggal)}</option>`).join('')}
+            ${bookings.map(b=>`<option value="${b.id}" ${editingInv && editingInv.bookingId===b.id ? 'selected':''}>${b.code || b.id} · ${b.nama} · ${b.tempat} · ${fmtDate(b.tanggal)}${b.jamEvent ? ' '+b.jamEvent : ''}</option>`).join('')}
           </select>
         </div>
         <div>
@@ -928,8 +971,15 @@ async function renderInvoiceTab(mount){
       </div>
     </div>
     <h3 style="margin:28px 0 14px; font-size:15px; color:var(--muted);">Riwayat Invoice</h3>
+    <div style="margin-bottom:14px;"><input type="text" id="invoiceSearchInput" placeholder="Cari No. Invoice, nama pelanggan, layanan, atau status…" value="${invoiceSearchQuery.replace(/"/g,'&quot;')}"></div>
     <div id="invList">${invoices.length===0 ? `<div class="empty">Belum ada invoice.</div>` : ''}</div>
   `;
+  window._allInvoices = invoices;
+  const invSearchInput = document.getElementById('invoiceSearchInput');
+  invSearchInput.addEventListener('input', ()=>{
+    invoiceSearchQuery = invSearchInput.value;
+    renderInvoiceHistory(window._allInvoices, filterInvoices(window._allInvoices, invoiceSearchQuery));
+  });
   let qrisBase64 = editingInv ? (editingInv.qris || '') : '';
   document.getElementById('inv_qris').addEventListener('change', (e)=>{
     const file = e.target.files[0];
@@ -965,11 +1015,15 @@ async function renderInvoiceTab(mount){
       renderInvoicePreview(invoice);
     }
   });
-  renderInvoiceHistory(invoices);
+  renderInvoiceHistory(invoices, filterInvoices(invoices, invoiceSearchQuery));
 }
-function renderInvoiceHistory(invoices){
-  if(invoices.length===0) return;
-  document.getElementById('invList').innerHTML = invoices.map(inv=>`
+function renderInvoiceHistory(allInvoices, invoices){
+  if(invoices === undefined) invoices = allInvoices;
+  const listEl = document.getElementById('invList');
+  if(!listEl) return;
+  if(allInvoices.length===0){ listEl.innerHTML = `<div class="empty">Belum ada invoice.</div>`; return; }
+  if(invoices.length===0){ listEl.innerHTML = `<div class="empty">Tidak ada invoice yang cocok.</div>`; return; }
+  listEl.innerHTML = invoices.map(inv=>`
     <div class="card list-card" style="margin-bottom:10px;">
       <div>
         <b>${inv.id}</b> — ${inv.booking ? inv.booking.nama : '-'} <span class="tag" style="${inv.status==='lunas' ? 'background:rgba(31,122,84,0.14); color:var(--success);' : 'background:rgba(192,57,43,0.12); color:var(--danger);'}">${inv.status==='lunas' ? 'Lunas' : 'Belum Lunas'}</span><br>
@@ -1035,6 +1089,7 @@ function buildInvoiceViewHtml(inv){
           <tr><td class="inv-label">Nama</td><td>${b.nama||'-'}</td></tr>
           <tr><td class="inv-label">Tempat Event</td><td>${b.tempat||'-'}</td></tr>
           <tr><td class="inv-label">Tanggal Event</td><td>${fmtDate(b.tanggal)}</td></tr>
+          <tr><td class="inv-label">Jam Event</td><td>${b.jamEvent || '-'}</td></tr>
           <tr><td class="inv-label">Status Pembayaran</td><td style="font-weight:700; color:${inv.status==='lunas' ? '#1F7A54' : '#C0392B'};">${inv.status==='lunas' ? 'LUNAS' : 'BELUM LUNAS'}</td></tr>
           <tr><td class="inv-label">Catatan</td><td>${inv.catatan || b.catatan || '-'}</td></tr>
         </table>
