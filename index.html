@@ -833,8 +833,8 @@ function renderAdmin(){
           <option value="keuangan" ${adminTab==='keuangan'?'selected':''}>💰 Keuangan</option>
           <option value="booking-form">➕ Pemesanan</option>
           <option value="settings" ${adminTab==='settings'?'selected':''}>⚙️ Pengaturan</option>
+          <option value="logout">🚪 Keluar</option>
         </select>
-        <button class="navbtn" id="logoutBtnMobile" style="color:var(--danger);">🚪 Keluar</button>
       </div>
       <div class="main" id="mainArea"></div>
     </div>
@@ -844,13 +844,12 @@ function renderAdmin(){
   });
   const logoutBtn = document.getElementById('logoutBtn');
   if(logoutBtn) logoutBtn.addEventListener('click', adminLogout);
-  const logoutBtnMobile = document.getElementById('logoutBtnMobile');
-  if(logoutBtnMobile) logoutBtnMobile.addEventListener('click', adminLogout);
   const mobileSelect = document.getElementById('mobileTabSelect');
   if(mobileSelect){
     mobileSelect.addEventListener('change', ()=>{
       const val = mobileSelect.value;
       if(val === 'booking-form'){ location.hash = '#/'; render(); }
+      else if(val === 'logout'){ adminLogout(); }
       else { adminTab = val; renderAdmin(); }
     });
   }
