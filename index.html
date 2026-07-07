@@ -144,6 +144,13 @@
   td{padding:13px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
   tr:hover td{background:rgba(42,36,48,0.035);}
   .tag{font-size:11px; padding:3px 9px; border-radius:20px; background:var(--surface-alt); color:var(--gold-soft); font-family:'JetBrains Mono',monospace;}
+  .toolbar-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .toolbar-row input[type="text"]{flex:1; min-width:220px; margin:0;}
+  .bulk-toolbar{display:none; align-items:center; gap:12px; background:var(--surface-alt); border:1px solid var(--gold); border-radius:10px; padding:10px 16px; margin-bottom:14px; flex-wrap:wrap;}
+  .bulk-toolbar span{font-size:13px; color:var(--gold-soft); font-weight:600;}
+  .row-chk, .card-chk{width:17px; height:17px; accent-color:var(--gold); cursor:pointer; margin:0;}
+  .list-card{position:relative;}
+  .card-chk-wrap{display:flex; align-items:center; flex-shrink:0;}
 
   .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
   .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
@@ -280,6 +287,7 @@
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#1a1a2e">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -402,6 +410,234 @@ async function saveSettings(){
 }
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ============ SELEKSI & HAPUS BANYAK SEKALIGUS ============ */
+let selectedBookingIds = new Set();
+let selectedInvoiceIds = new Set();
+let selectedKasIds = new Set();
+function selSetFor(kind){ return kind==='booking' ? selectedBookingIds : kind==='invoice' ? selectedInvoiceIds : selectedKasIds; }
+function visibleListFor(kind){
+  return kind==='booking' ? (window._visibleBookings||window._allBookings||[])
+       : kind==='invoice' ? (window._visibleInvoices||window._allInvoices||[])
+       : (window._visibleKas||window._allKas||[]);
+}
+function rerenderListFor(kind){
+  if(kind==='booking') renderBookingsList(visibleListFor('booking'));
+  else if(kind==='invoice') renderInvoiceHistory(window._allInvoices||[], visibleListFor('invoice'));
+  else renderKasHistory(window._allKas||[], visibleListFor('kas'));
+}
+function toggleRowSelect(kind, id, checked){
+  const set = selSetFor(kind);
+  if(checked) set.add(id); else set.delete(id);
+  updateBulkToolbar(kind);
+}
+function toggleSelectAllRows(kind, checked){
+  const set = selSetFor(kind);
+  set.clear();
+  if(checked){
+    let list = visibleListFor(kind);
+    if(kind==='kas') list = list.filter(x=>x.sumber!=='invoice');
+    list.forEach(x=>set.add(x.id));
+  }
+  rerenderListFor(kind);
+  updateBulkToolbar(kind);
+}
+function clearSelection(kind){
+  selSetFor(kind).clear();
+  rerenderListFor(kind);
+  updateBulkToolbar(kind);
+}
+function updateBulkToolbar(kind){
+  const set = selSetFor(kind);
+  const toolbar = document.getElementById(kind+'BulkToolbar');
+  const countEl = document.getElementById(kind+'SelCount');
+  if(toolbar) toolbar.style.display = set.size>0 ? 'flex' : 'none';
+  if(countEl) countEl.textContent = `${set.size} data dipilih`;
+  const selAll = document.getElementById(kind+'SelectAll');
+  if(selAll){
+    let visible = visibleListFor(kind);
+    if(kind==='kas') visible = visible.filter(x=>x.sumber!=='invoice');
+    selAll.checked = visible.length>0 && visible.every(x=>set.has(x.id));
+  }
+}
+async function bulkDelete(kind){
+  const set = selSetFor(kind);
+  if(set.size===0) return;
+  const label = kind==='booking' ? 'pemesanan' : kind==='invoice' ? 'invoice' : 'transaksi keuangan';
+  if(!confirm(`Hapus ${set.size} data ${label} terpilih? Tindakan ini tidak dapat dibatalkan.`)) return;
+  const prefix = kind==='booking' ? 'booking:' : kind==='kas' ? 'kas:' : 'invoice:';
+  for(const id of Array.from(set)){
+    await sDelete(prefix + id);
+    if(kind==='invoice') await sDelete('kas:auto-'+id);
+    if(kind==='booking' && editingBookingId===id) editingBookingId = null;
+    if(kind==='invoice' && editingInvoiceId===id) editingInvoiceId = null;
+    if(kind==='kas' && editingKasId===id) editingKasId = null;
+  }
+  toast(`${set.size} data ${label} berhasil dihapus.`);
+  set.clear();
+  renderAdmin();
+}
+
+/* ============ EKSPOR REKAP KE EXCEL ============ */
+function ensureXLSX(){
+  if(typeof XLSX === 'undefined'){ toast('Fitur Excel belum siap dimuat (perlu koneksi internet). Coba lagi sesaat lagi.'); return false; }
+  return true;
+}
+function downloadWorkbook(wb, filename){
+  try{ XLSX.writeFile(wb, filename); }
+  catch(e){ console.error('Gagal membuat file Excel', e); toast('Gagal membuat file Excel.'); }
+}
+function bookingsToRows(bookings){
+  return bookings.map(b=>({
+    'ID Booking': b.code || b.id,
+    'Nama': b.nama || '',
+    'Nomor WA': b.noWa || '',
+    'Event': b.isiEvent || '',
+    'Tempat Event': b.tempat || '',
+    'Tanggal Event': b.tanggal || '',
+    'Jam Event': b.jamEvent || '',
+    'Catatan': b.catatan || '',
+    'Tanggal Diterima': b.createdAt ? new Date(b.createdAt).toLocaleDateString('id-ID') : ''
+  }));
+}
+function invoicesToRows(invoices){
+  return invoices.map(inv=>({
+    'No. Invoice': inv.id,
+    'ID Booking': inv.bookingId || '',
+    'Nama Pelanggan': inv.booking ? inv.booking.nama : '',
+    'Layanan': inv.layanan || '',
+    'Harga': Number(inv.harga||0),
+    'Status': inv.status==='lunas' ? 'Lunas' : 'Belum Lunas',
+    'Catatan': inv.catatan || '',
+    'Tanggal Dibuat': inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('id-ID') : ''
+  }));
+}
+function kasToRows(items){
+  const rows = items.map(k=>({
+    'Jenis': k.type==='masuk' ? 'Uang Masuk' : 'Uang Keluar',
+    'Jumlah': Number(k.jumlah||0),
+    'Tanggal': k.tanggal || '',
+    'Keterangan': k.keterangan || '',
+    'Sumber': k.sumber==='invoice' ? 'Otomatis (Invoice)' : 'Manual'
+  }));
+  const totalMasuk = items.filter(k=>k.type==='masuk').reduce((s,k)=>s+Number(k.jumlah||0),0);
+  const totalKeluar = items.filter(k=>k.type==='keluar').reduce((s,k)=>s+Number(k.jumlah||0),0);
+  rows.push({'Jenis':'','Jumlah':'','Tanggal':'','Keterangan':'','Sumber':''});
+  rows.push({'Jenis':'RINGKASAN','Jumlah':'','Tanggal':'','Keterangan':'','Sumber':''});
+  rows.push({'Jenis':'Total Uang Masuk','Jumlah':totalMasuk,'Tanggal':'','Keterangan':'','Sumber':''});
+  rows.push({'Jenis':'Total Uang Keluar','Jumlah':totalKeluar,'Tanggal':'','Keterangan':'','Sumber':''});
+  rows.push({'Jenis':'Saldo','Jumlah':totalMasuk-totalKeluar,'Tanggal':'','Keterangan':'','Sumber':''});
+  return rows;
+}
+async function exportBookingsExcel(){
+  if(!ensureXLSX()) return;
+  const bookings = window._allBookings || await getAllBookings();
+  if(bookings.length===0){ toast('Belum ada data pemesanan untuk diunduh.'); return; }
+  const ws = XLSX.utils.json_to_sheet(bookingsToRows(bookings));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data Pemesanan');
+  downloadWorkbook(wb, `Rekap-Pemesanan-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Rekap data pemesanan berhasil diunduh.');
+}
+async function exportInvoicesExcel(){
+  if(!ensureXLSX()) return;
+  const invoices = window._allInvoices || await getAllInvoices();
+  if(invoices.length===0){ toast('Belum ada data invoice untuk diunduh.'); return; }
+  const ws = XLSX.utils.json_to_sheet(invoicesToRows(invoices));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Invoice');
+  downloadWorkbook(wb, `Rekap-Invoice-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Rekap invoice berhasil diunduh.');
+}
+async function exportKasExcel(){
+  if(!ensureXLSX()) return;
+  const items = window._allKas || await getAllKas();
+  if(items.length===0){ toast('Belum ada data keuangan untuk diunduh.'); return; }
+  const ws = XLSX.utils.json_to_sheet(kasToRows(items));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Keuangan');
+  downloadWorkbook(wb, `Rekap-Keuangan-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Rekap keuangan berhasil diunduh.');
+}
+async function exportAllDataExcel(){
+  if(!ensureXLSX()) return;
+  const [bookings, invoices, kas] = await Promise.all([getAllBookings(), getAllInvoices(), getAllKas()]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bookingsToRows(bookings)), 'Data Pemesanan');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(invoicesToRows(invoices)), 'Invoice');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kasToRows(kas)), 'Keuangan');
+  downloadWorkbook(wb, `Rekap-Lengkap-GalleryPesona-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Rekap lengkap (3 sheet) berhasil diunduh.');
+}
+
+/* ============ IMPORT DATA PEMESANAN DARI EXCEL ============ */
+function downloadBookingTemplate(){
+  if(!ensureXLSX()) return;
+  const rows = [{
+    'Nama':'Budi Santoso',
+    'Nomor WA':'0812xxxxxxxx',
+    'Event':'Akad Nikah',
+    'Tempat Event':'Gedung Serbaguna Kudus',
+    'Tanggal Event':'2026-08-20',
+    'Jam Event':'09:00',
+    'Catatan':'Opsional'
+  }];
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template Pemesanan');
+  downloadWorkbook(wb, 'Template-Import-Pemesanan.xlsx');
+  toast('Template Excel berhasil diunduh.');
+}
+function excelDateToStr(val){
+  if(val === null || val === undefined || val === '') return '';
+  if(val instanceof Date){ return val.toISOString().slice(0,10); }
+  if(typeof val === 'number'){
+    try{
+      const d = XLSX.SSF.parse_date_code(val);
+      if(d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    }catch(e){}
+  }
+  return String(val).trim();
+}
+function importBookingsFromExcel(file){
+  if(!file) return;
+  if(!ensureXLSX()) return;
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      if(json.length===0){ toast('File Excel kosong atau format tidak sesuai.'); return; }
+      let count = 0, skipped = 0;
+      for(const row of json){
+        const nama = String(row['Nama']||row['nama']||'').trim();
+        const noWa = String(row['Nomor WA']||row['No WA']||row['noWa']||'').trim();
+        const isiEvent = String(row['Event']||row['isiEvent']||'').trim();
+        const tempat = String(row['Tempat Event']||row['Tempat']||row['tempat']||'').trim();
+        const tanggal = excelDateToStr(row['Tanggal Event']!==undefined && row['Tanggal Event']!=='' ? row['Tanggal Event'] : row['Tanggal']||row['tanggal']);
+        const jamEvent = String(row['Jam Event']||row['Jam']||row['jamEvent']||'').trim();
+        const catatan = String(row['Catatan']||row['catatan']||'').trim();
+        if(!nama || !tempat || !tanggal){ skipped++; continue; }
+        const id = uid();
+        const now = new Date();
+        const code = `IMP-${String(count+1).padStart(3,'0')}-${now.getTime().toString().slice(-5)}`;
+        const booking = { id, code, nama, noWa, isiEvent, tempat, tanggal, jamEvent, catatan, createdAt: now.getTime(), status:'baru' };
+        await sSet('booking:'+id, booking);
+        count++;
+      }
+      toast(`${count} data pemesanan berhasil diimpor.${skipped>0 ? ' '+skipped+' baris dilewati (data tidak lengkap).' : ''}`);
+      renderAdmin();
+    }catch(err){
+      console.error('Gagal impor Excel', err);
+      toast('Gagal membaca file Excel. Pastikan formatnya sesuai template.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  const inp = document.getElementById('importBookingFile');
+  if(inp) inp.value = '';
+}
 function togglePw(id, btn){
   const el = document.getElementById(id);
   if(!el) return;
@@ -916,8 +1152,20 @@ function filterBookings(bookings, q){
     .some(v => (v||'').toString().toLowerCase().includes(s)));
 }
 async function renderBookingsTab(mount){
+  selectedBookingIds.clear();
   mount.innerHTML = `<h2>Data Pemesanan</h2><p class="sub">Semua data yang masuk dari formulir pelanggan.</p>
-    <div style="margin-bottom:16px;"><input type="text" id="bookingSearchInput" placeholder="Cari nama, ID booking, WA, event, atau tempat…" value="${bookingSearchQuery.replace(/"/g,'&quot;')}"></div>
+    <div class="toolbar-row">
+      <input type="text" id="bookingSearchInput" placeholder="Cari nama, ID booking, WA, event, atau tempat…" value="${bookingSearchQuery.replace(/"/g,'&quot;')}">
+      <button class="btn btn-ghost" onclick="exportBookingsExcel()">⬇️ Unduh Rekap (Excel)</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('importBookingFile').click()">📥 Import dari Excel</button>
+      <button class="btn btn-ghost" onclick="downloadBookingTemplate()">📄 Unduh Template</button>
+      <input type="file" id="importBookingFile" accept=".xlsx,.xls,.csv" style="display:none;" onchange="importBookingsFromExcel(this.files[0])">
+    </div>
+    <div class="bulk-toolbar" id="bookingBulkToolbar">
+      <span id="bookingSelCount">0 data dipilih</span>
+      <button class="btn btn-danger" onclick="bulkDelete('booking')">🗑️ Hapus Terpilih</button>
+      <button class="btn btn-ghost" onclick="clearSelection('booking')">Batal Pilih</button>
+    </div>
     <div id="editBookingArea"></div><div id="bookingsList">Memuat…</div>`;
   const bookings = await getAllBookings();
   window._allBookings = bookings;
@@ -969,10 +1217,11 @@ function renderBookingsList(bookings){
   list.innerHTML = `
     <div class="booking-table-wrap">
     <table>
-      <thead><tr><th>ID Booking</th><th>Nama</th><th>Nomor WA</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Jam</th><th>Catatan</th><th>Diterima</th><th colspan="3"></th></tr></thead>
+      <thead><tr><th style="width:34px;"><input type="checkbox" id="bookingSelectAll" onchange="toggleSelectAllRows('booking', this.checked)"></th><th>ID Booking</th><th>Nama</th><th>Nomor WA</th><th>Event</th><th>Tempat</th><th>Tanggal</th><th>Jam</th><th>Catatan</th><th>Diterima</th><th colspan="3"></th></tr></thead>
       <tbody>
         ${bookings.map(b=>`
           <tr>
+            <td><input type="checkbox" class="row-chk" ${selectedBookingIds.has(b.id)?'checked':''} onchange="toggleRowSelect('booking','${b.id}', this.checked)"></td>
             <td><span class="tag">${b.code || b.id}</span></td>
             <td>${b.nama}</td>
             <td>${b.noWa || '-'}</td>
@@ -992,17 +1241,19 @@ function renderBookingsList(bookings){
     </div>
     <div class="booking-cards-mobile">
       ${bookings.map(b=>`
-        <div class="booking-card" onclick="showBookingDetail('${b.id}')">
-          <div class="bc-main">
+        <div class="booking-card">
+          <div class="card-chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="card-chk" ${selectedBookingIds.has(b.id)?'checked':''} onchange="toggleRowSelect('booking','${b.id}', this.checked)"></div>
+          <div class="bc-main" onclick="showBookingDetail('${b.id}')" style="cursor:pointer; flex:1; min-width:0;">
             <b>${b.nama}</b>
             <span>${fmtDate(b.tanggal)} · ${b.noWa || '-'}</span>
           </div>
-          <div class="bc-arrow">›</div>
+          <div class="bc-arrow" onclick="showBookingDetail('${b.id}')" style="cursor:pointer;">›</div>
         </div>
       `).join('')}
     </div>
   `;
   window._visibleBookings = bookings;
+  updateBulkToolbar('booking');
 }
 function showBookingDetail(id){
   const b = (window._visibleBookings||[]).find(x=>x.id===id);
@@ -1114,6 +1365,7 @@ function filterInvoices(invoices, q){
     .some(v => (v||'').toString().toLowerCase().includes(s)));
 }
 async function renderInvoiceTab(mount){
+  selectedInvoiceIds.clear();
   mount.innerHTML = `<h2>Invoice</h2><p class="sub">Buat invoice dari data pemesanan, lengkapi harga dan QRIS pembayaran.</p><div id="invArea">Memuat…</div>`;
   const [bookings, invoices] = await Promise.all([getAllBookings(), getAllInvoices()]);
   const area = document.getElementById('invArea');
@@ -1174,7 +1426,16 @@ async function renderInvoiceTab(mount){
       </div>
     </div>
     <h3 style="margin:28px 0 14px; font-size:15px; color:var(--muted);">Riwayat Invoice</h3>
-    <div style="margin-bottom:14px;"><input type="text" id="invoiceSearchInput" placeholder="Cari No. Invoice, nama pelanggan, layanan, atau status…" value="${invoiceSearchQuery.replace(/"/g,'&quot;')}"></div>
+    <div class="toolbar-row">
+      <input type="text" id="invoiceSearchInput" placeholder="Cari No. Invoice, nama pelanggan, layanan, atau status…" value="${invoiceSearchQuery.replace(/"/g,'&quot;')}">
+      <button class="btn btn-ghost" onclick="exportInvoicesExcel()">⬇️ Unduh Rekap (Excel)</button>
+    </div>
+    <div class="bulk-toolbar" id="invoiceBulkToolbar">
+      <span id="invoiceSelCount">0 data dipilih</span>
+      <button class="btn btn-danger" onclick="bulkDelete('invoice')">🗑️ Hapus Terpilih</button>
+      <button class="btn btn-ghost" onclick="clearSelection('invoice')">Batal Pilih</button>
+    </div>
+    <div style="margin-bottom:10px;"><label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer;"><input type="checkbox" id="invoiceSelectAll" class="row-chk" onchange="toggleSelectAllRows('invoice', this.checked)"> Pilih semua invoice yang tampil</label></div>
     <div id="invList">${invoices.length===0 ? `<div class="empty">Belum ada invoice.</div>` : ''}</div>
   `;
   window._allInvoices = invoices;
@@ -1230,7 +1491,8 @@ function renderInvoiceHistory(allInvoices, invoices){
   if(invoices.length===0){ listEl.innerHTML = `<div class="empty">Tidak ada invoice yang cocok.</div>`; return; }
   listEl.innerHTML = invoices.map(inv=>`
     <div class="card list-card" style="margin-bottom:10px;">
-      <div>
+      <div class="card-chk-wrap"><input type="checkbox" class="row-chk" ${selectedInvoiceIds.has(inv.id)?'checked':''} onchange='toggleRowSelect("invoice", ${JSON.stringify(inv.id)}, this.checked)'></div>
+      <div style="flex:1; min-width:180px;">
         <b>${inv.id}</b> — ${inv.booking ? inv.booking.nama : '-'} <span class="tag" style="${inv.status==='lunas' ? 'background:rgba(31,122,84,0.14); color:var(--success);' : 'background:rgba(192,57,43,0.12); color:var(--danger);'}">${inv.status==='lunas' ? 'Lunas' : 'Belum Lunas'}</span><br>
         <span style="color:var(--muted); font-size:13px;">${fmtIDR(inv.harga)} · ${new Date(inv.createdAt).toLocaleDateString('id-ID')}</span>
       </div>
@@ -1264,6 +1526,8 @@ function renderInvoiceHistory(allInvoices, invoices){
       else if(action === 'delete'){ if(confirm('Hapus invoice ini? Tindakan ini tidak dapat dibatalkan.')) doDelete('invoice', id); }
     });
   });
+  window._visibleInvoices = invoices;
+  updateBulkToolbar('invoice');
 }
 async function toggleInvoiceStatus(id){
   const inv = await sGet('invoice:'+id);
@@ -1338,6 +1602,7 @@ function filterKas(items, q){
     .some(v => (v||'').toString().toLowerCase().includes(s)));
 }
 async function renderKeuanganTab(mount){
+  selectedKasIds.clear();
   mount.innerHTML = `<h2>Keuangan</h2><p class="sub">Catat uang masuk &amp; keluar. Invoice yang ditandai Lunas otomatis tercatat sebagai uang masuk.</p><div id="kasArea">Memuat…</div>`;
   const items = await getAllKas();
   const area = document.getElementById('kasArea');
@@ -1386,7 +1651,16 @@ async function renderKeuanganTab(mount){
       </div>
     </div>
     <h3 style="margin:28px 0 14px; font-size:15px; color:var(--muted);">Riwayat Transaksi</h3>
-    <div style="margin-bottom:14px;"><input type="text" id="kasSearchInput" placeholder="Cari keterangan, jenis, atau sumber…" value="${kasSearchQuery.replace(/"/g,'&quot;')}"></div>
+    <div class="toolbar-row">
+      <input type="text" id="kasSearchInput" placeholder="Cari keterangan, jenis, atau sumber…" value="${kasSearchQuery.replace(/"/g,'&quot;')}">
+      <button class="btn btn-ghost" onclick="exportKasExcel()">⬇️ Unduh Rekap (Excel)</button>
+    </div>
+    <div class="bulk-toolbar" id="kasBulkToolbar">
+      <span id="kasSelCount">0 data dipilih</span>
+      <button class="btn btn-danger" onclick="bulkDelete('kas')">🗑️ Hapus Terpilih</button>
+      <button class="btn btn-ghost" onclick="clearSelection('kas')">Batal Pilih</button>
+    </div>
+    <div style="margin-bottom:10px;"><label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer;"><input type="checkbox" id="kasSelectAll" class="row-chk" onchange="toggleSelectAllRows('kas', this.checked)"> Pilih semua transaksi manual yang tampil</label></div>
     <div id="kasList">${items.length===0 ? `<div class="empty">Belum ada transaksi keuangan.</div>` : ''}</div>
   `;
   window._allKas = items;
@@ -1430,7 +1704,8 @@ function renderKasHistory(allItems, items){
   const isAuto = k => k.sumber === 'invoice';
   listEl.innerHTML = items.map(k=>`
     <div class="card list-card" style="margin-bottom:10px;">
-      <div>
+      <div class="card-chk-wrap" style="width:22px;">${isAuto(k) ? '' : `<input type="checkbox" class="row-chk" ${selectedKasIds.has(k.id)?'checked':''} onchange='toggleRowSelect("kas", ${JSON.stringify(k.id)}, this.checked)'>`}</div>
+      <div style="flex:1; min-width:180px;">
         <span class="kas-badge ${k.type}">${k.type==='masuk' ? '↑ Masuk' : '↓ Keluar'}</span>${isAuto(k) ? `<span class="kas-badge auto">Otomatis · Invoice</span>` : ''}<br>
         <b style="display:inline-block; margin-top:6px;">${k.keterangan}</b><br>
         <span style="color:var(--muted); font-size:13px;">${fmtIDR(k.jumlah)} · ${fmtDate(k.tanggal)}</span>
@@ -1443,6 +1718,8 @@ function renderKasHistory(allItems, items){
       </div>
     </div>
   `).join('');
+  window._visibleKas = items;
+  updateBulkToolbar('kas');
 }
 
 /* ---- Rekening Pembayaran (CRUD) ---- */
@@ -1549,6 +1826,12 @@ async function renderSettingsTab(mount){
         <div><label>Atas Nama (opsional)</label><input type="text" id="rek_atasnama" placeholder="Nama pemilik rekening"></div>
         <div><button class="btn btn-primary" onclick="addRekening()">Tambah Rekening</button></div>
       </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="font-size:15px; margin-bottom:14px;">Backup &amp; Ekspor Data</h3>
+      <p class="sub" style="margin-bottom:16px;">Unduh seluruh data (Pemesanan, Invoice, Keuangan) dalam satu file Excel berisi 3 sheet, untuk cadangan atau laporan.</p>
+      <button class="btn btn-primary" onclick="exportAllDataExcel()">⬇️ Unduh Rekap Lengkap (Excel)</button>
     </div>
 
     <div class="card">
