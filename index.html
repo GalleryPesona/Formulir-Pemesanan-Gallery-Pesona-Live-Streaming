@@ -1855,14 +1855,14 @@ async function renderSettingsTab(mount){
     </div>
 
     <div class="card">
-      <h3 style="font-size:15px; margin-bottom:14px;">Ubah Kata Sandi Admin</h3>
-      <p class="sub" style="margin-bottom:16px;">Demi keamanan, perubahan kata sandi wajib dikonfirmasi dengan kode yang dikirim otomatis ke email admin (${ADMIN_OTP_EMAIL}).</p>
+      <h3 style="font-size:15px; margin-bottom:14px;">Ubah Kata Sandi &amp; Email Admin</h3>
+      <p class="sub" style="margin-bottom:16px;">Isi salah satu saja jika hanya ingin mengubah kata sandi ATAU email, atau isi keduanya sekaligus jika ingin mengubah dua-duanya. Demi keamanan, perubahan wajib dikonfirmasi dengan kode yang dikirim otomatis ke email keamanan (${ADMIN_OTP_EMAIL}).</p>
       ${!emailjsReady ? `<p style="color:var(--danger); font-size:12.5px; margin-bottom:12px;">EmailJS belum dikonfigurasi. Kode konfirmasi tidak dapat dikirim lewat email sampai EMAILJS_PUBLIC_KEY/SERVICE_ID/TEMPLATE_ID diisi di kode.</p>` : ''}
       <div class="form-grid">
         <div class="row2">
-          <div><label>Kata Sandi Baru</label>
+          <div><label>Kata Sandi Baru (opsional)</label>
             <div class="pw-wrap">
-              <input type="password" id="set_newpass" placeholder="Minimal 6 karakter">
+              <input type="password" id="set_newpass" placeholder="Kosongkan jika tidak diubah">
               <button type="button" class="pw-toggle" onclick="togglePw('set_newpass', this)" aria-label="Tampilkan kata sandi">👁</button>
             </div>
           </div>
@@ -1873,15 +1873,19 @@ async function renderSettingsTab(mount){
             </div>
           </div>
         </div>
+        <div>
+          <label>Email Login Admin Baru (opsional)</label>
+          <input type="email" id="set_newemail" placeholder="Kosongkan jika tidak diubah">
+        </div>
         <div id="otpStep1">
-          <button class="btn btn-primary" id="sendOtpBtn" onclick="sendPasswordOtp()">Kirim Kode Konfirmasi ke Email</button>
+          <button class="btn btn-primary" id="sendOtpBtn" onclick="sendCredentialOtp()">Kirim Kode Konfirmasi ke Email</button>
         </div>
         <div id="otpStep2" style="display:none;">
-          <label>Kode Konfirmasi (dikirim ke email admin)</label>
+          <label>Kode Konfirmasi (dikirim ke email keamanan)</label>
           <input type="text" id="set_otp" placeholder="Masukkan 6 digit kode">
           <div style="display:flex; gap:10px; margin-top:12px;">
-            <button class="btn btn-primary" onclick="confirmPasswordOtp()">Konfirmasi &amp; Simpan</button>
-            <button class="btn btn-ghost" onclick="cancelPasswordOtp()">Batal</button>
+            <button class="btn btn-primary" onclick="confirmCredentialOtp()">Konfirmasi &amp; Simpan</button>
+            <button class="btn btn-ghost" onclick="cancelCredentialOtp()">Batal</button>
           </div>
         </div>
       </div>
@@ -1899,28 +1903,48 @@ function saveAdminNumber(){
   renderAdmin();
 }
 
-async function sendPasswordOtp(){
+async function sendCredentialOtp(){
   const p1 = document.getElementById('set_newpass').value;
   const p2 = document.getElementById('set_newpass2').value;
-  if(!p1 || p1.length<6){ toast('Kata sandi baru minimal 6 karakter.'); return; }
-  if(p1 !== p2){ toast('Konfirmasi kata sandi baru tidak cocok.'); return; }
+  const newEmail = document.getElementById('set_newemail').value.trim();
+
+  const wantsPassword = !!p1 || !!p2;
+  const wantsEmail = !!newEmail;
+
+  if(!wantsPassword && !wantsEmail){ toast('Isi kata sandi baru dan/atau email admin baru terlebih dahulu.'); return; }
+
+  if(wantsPassword){
+    if(p1.length<6){ toast('Kata sandi baru minimal 6 karakter.'); return; }
+    if(p1 !== p2){ toast('Konfirmasi kata sandi baru tidak cocok.'); return; }
+  }
+  if(wantsEmail){
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail);
+    if(!emailOk){ toast('Format email admin baru tidak valid.'); return; }
+  }
   if(!emailjsReady){ toast('EmailJS belum dikonfigurasi. Lengkapi EMAILJS_PUBLIC_KEY/SERVICE_ID/TEMPLATE_ID di kode terlebih dahulu.'); return; }
 
   const code = String(Math.floor(100000 + Math.random()*900000));
   const btn = document.getElementById('sendOtpBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'Mengirim email...'; }
 
+  const changeLabel = wantsPassword && wantsEmail ? 'kata sandi dan email login' : (wantsPassword ? 'kata sandi' : 'email login');
+
   try{
     await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email: ADMIN_OTP_EMAIL,
       app_name: 'Gallery Pesona',
       code: code,
-      message: `Kode konfirmasi Anda: ${code}. Masukkan kode ini di halaman Pengaturan admin untuk menyelesaikan perubahan kata sandi. Kode berlaku 10 menit. Abaikan email ini jika Anda tidak meminta perubahan.`
+      message: `Kode konfirmasi Anda: ${code}. Masukkan kode ini di halaman Pengaturan admin untuk menyelesaikan perubahan ${changeLabel} admin. Kode berlaku 10 menit. Abaikan email ini jika Anda tidak meminta perubahan.`
     });
-    pendingOtp = { code, newPassword: p1, expiresAt: Date.now() + 10*60*1000 };
+    pendingOtp = {
+      code,
+      newPassword: wantsPassword ? p1 : null,
+      newEmail: wantsEmail ? newEmail : null,
+      expiresAt: Date.now() + 10*60*1000
+    };
     document.getElementById('otpStep1').style.display = 'none';
     document.getElementById('otpStep2').style.display = 'block';
-    toast('Kode konfirmasi telah dikirim otomatis ke email admin.');
+    toast('Kode konfirmasi telah dikirim otomatis ke email keamanan.');
   }catch(e){
     console.error('Gagal mengirim email OTP', e);
     toast('Gagal mengirim email kode konfirmasi: ' + (e?.text || e?.message || 'kesalahan tidak diketahui'));
@@ -1929,26 +1953,40 @@ async function sendPasswordOtp(){
   }
 }
 
-function cancelPasswordOtp(){
+function cancelCredentialOtp(){
   pendingOtp = null;
   renderAdmin();
 }
 
-async function confirmPasswordOtp(){
-  if(!pendingOtp){ toast('Tidak ada permintaan perubahan kata sandi yang aktif.'); return; }
+async function confirmCredentialOtp(){
+  if(!pendingOtp){ toast('Tidak ada permintaan perubahan yang aktif.'); return; }
   const code = document.getElementById('set_otp').value.trim();
   if(Date.now() > pendingOtp.expiresAt){ toast('Kode konfirmasi sudah kedaluwarsa. Silakan ulangi.'); pendingOtp=null; renderAdmin(); return; }
   if(code !== pendingOtp.code){ toast('Kode konfirmasi salah.'); return; }
-  if(!sb){ toast('Supabase belum dikonfigurasi, kata sandi tidak dapat diubah.'); return; }
+  if(!sb){ toast('Supabase belum dikonfigurasi, perubahan tidak dapat disimpan.'); return; }
   try{
-    const { error } = await sb.auth.updateUser({ password: pendingOtp.newPassword });
+    const updatePayload = {};
+    if(pendingOtp.newPassword) updatePayload.password = pendingOtp.newPassword;
+    if(pendingOtp.newEmail) updatePayload.email = pendingOtp.newEmail;
+
+    const { error } = await sb.auth.updateUser(updatePayload);
     if(error) throw error;
+
+    const changedBoth = pendingOtp.newPassword && pendingOtp.newEmail;
+    const changedEmail = !!pendingOtp.newEmail;
     pendingOtp = null;
-    toast('Kata sandi admin berhasil diperbarui.');
+
+    if(changedEmail){
+      toast(changedBoth
+        ? 'Kata sandi diperbarui. Cek juga inbox email baru untuk konfirmasi perubahan email login.'
+        : 'Permintaan ganti email login dikirim. Cek inbox email baru untuk konfirmasi.');
+    } else {
+      toast('Kata sandi admin berhasil diperbarui.');
+    }
     renderAdmin();
   }catch(e){
-    console.error('Gagal memperbarui kata sandi', e);
-    toast('Gagal memperbarui kata sandi: ' + (e.message || 'kesalahan tidak diketahui'));
+    console.error('Gagal memperbarui kredensial admin', e);
+    toast('Gagal menyimpan perubahan: ' + (e.message || 'kesalahan tidak diketahui'));
   }
 }
 
