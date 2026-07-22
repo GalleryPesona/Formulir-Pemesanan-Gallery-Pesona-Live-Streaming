@@ -261,6 +261,10 @@
     font-size:20px; line-height:1; color:var(--muted); cursor:pointer; padding:4px 8px;
   }
   .testimoni-modal-close:hover{color:var(--gold);}
+  .star-picker{font-size:28px; letter-spacing:4px; user-select:none;}
+  .star-picker .star-pick{display:inline-block; cursor:pointer; color:var(--line); transition:color .1s, transform .1s;}
+  .star-picker .star-pick.filled{color:var(--gold);}
+  .star-picker .star-pick:hover{transform:scale(1.12);}
   ::selection{background:var(--gold); color:#FFFFFF;}
   .pw-wrap{position:relative;}
   .pw-wrap input{padding-right:42px;}
@@ -1200,13 +1204,10 @@ function openTestimoniModal(){
           </div>
           <div>
             <label>Rating</label>
-            <select id="tf_rating">
-              <option value="5">5 Bintang</option>
-              <option value="4">4 Bintang</option>
-              <option value="3">3 Bintang</option>
-              <option value="2">2 Bintang</option>
-              <option value="1">1 Bintang</option>
-            </select>
+            <div id="tf_rating_stars" class="star-picker">
+              <span class="star-pick" data-val="1">★</span><span class="star-pick" data-val="2">★</span><span class="star-pick" data-val="3">★</span><span class="star-pick" data-val="4">★</span><span class="star-pick" data-val="5">★</span>
+            </div>
+            <input type="hidden" id="tf_rating" value="5">
           </div>
           <div>
             <label>Testimoni</label>
@@ -1225,6 +1226,25 @@ function openTestimoniModal(){
   overlay.addEventListener('click', (ev)=>{ if(ev.target === overlay) closeTestimoniModal(); });
   document.body.appendChild(overlay);
   document.getElementById('testimoniForm').addEventListener('submit', onSubmitTestimoni);
+  initStarPicker();
+}
+function initStarPicker(){
+  const wrap = document.getElementById('tf_rating_stars');
+  const hidden = document.getElementById('tf_rating');
+  if(!wrap || !hidden) return;
+  const stars = Array.from(wrap.querySelectorAll('.star-pick'));
+  function paint(val){
+    stars.forEach(s=> s.classList.toggle('filled', Number(s.dataset.val) <= val));
+  }
+  paint(Number(hidden.value)||5);
+  stars.forEach(s=>{
+    s.addEventListener('click', ()=>{
+      hidden.value = s.dataset.val;
+      paint(Number(s.dataset.val));
+    });
+    s.addEventListener('mouseenter', ()=> paint(Number(s.dataset.val)));
+  });
+  wrap.addEventListener('mouseleave', ()=> paint(Number(hidden.value)));
 }
 function closeTestimoniModal(){
   const overlay = document.getElementById('testimoniModalOverlay');
