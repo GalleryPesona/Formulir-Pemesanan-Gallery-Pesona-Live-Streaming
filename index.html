@@ -247,6 +247,20 @@
     padding:14px 18px; border-radius:10px; font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,.4);
     display:none; z-index:50; max-width:320px;
   }
+  .testimoni-modal-overlay{
+    position:fixed; inset:0; background:rgba(15,42,74,0.55); display:flex;
+    align-items:center; justify-content:center; z-index:150; padding:20px;
+  }
+  .testimoni-modal-box{
+    background:var(--surface); width:100%; max-width:520px; border-radius:18px;
+    max-height:88vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.35);
+    position:relative;
+  }
+  .testimoni-modal-close{
+    position:absolute; top:14px; right:14px; background:transparent; border:none;
+    font-size:20px; line-height:1; color:var(--muted); cursor:pointer; padding:4px 8px;
+  }
+  .testimoni-modal-close:hover{color:var(--gold);}
   ::selection{background:var(--gold); color:#FFFFFF;}
   .pw-wrap{position:relative;}
   .pw-wrap input{padding-right:42px;}
@@ -1142,51 +1156,12 @@ async function renderTestimoniPublic(){
         <h1 style="margin-top:10px; font-size:28px;">Testimoni Pelanggan</h1>
         <p>Pengalaman pelanggan yang telah menggunakan jasa live streaming Gallery Pesona.</p>
       </div>
-      <div class="pass" style="margin-bottom:30px;">
-        <div class="pass-head">
-          <span class="eyebrow">Beri Testimoni</span>
-        </div>
-        <div class="pass-body">
-          <form id="testimoniForm" class="form-grid" novalidate>
-            <div>
-              <label>Nama</label>
-              <input type="text" id="tf_nama" placeholder="Nama lengkap">
-            </div>
-            <div>
-              <label>Email</label>
-              <input type="email" id="tf_email" placeholder="nama@email.com">
-            </div>
-            <div>
-              <label>Nama Acara (opsional)</label>
-              <input type="text" id="tf_acara" placeholder="Contoh: Akad Nikah, Wisuda, Seminar">
-            </div>
-            <div>
-              <label>Rating</label>
-              <select id="tf_rating">
-                <option value="5">5 Bintang</option>
-                <option value="4">4 Bintang</option>
-                <option value="3">3 Bintang</option>
-                <option value="2">2 Bintang</option>
-                <option value="1">1 Bintang</option>
-              </select>
-            </div>
-            <div>
-              <label>Testimoni</label>
-              <textarea id="tf_isi" rows="3" placeholder="Ceritakan pengalaman Anda..."></textarea>
-            </div>
-            <div>
-              <label>Kritik &amp; Saran</label>
-              <textarea id="tf_kritik" rows="3" placeholder="Kritik dan saran untuk kami..."></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top:6px;">Kirim Testimoni</button>
-          </form>
-          <p class="foot-note">Testimoni akan ditinjau oleh admin sebelum ditampilkan di halaman ini. Kritik &amp; saran hanya akan diterima oleh admin dan tidak ditampilkan secara publik.</p>
-        </div>
+      <div style="display:flex; justify-content:center; margin-bottom:30px;">
+        <button type="button" class="btn btn-primary" onclick="openTestimoniModal()">✍️ Kirim Testimoni Baru</button>
       </div>
       <div id="testimoniList">Memuat…</div>
     </div>
   `;
-  document.getElementById('testimoniForm').addEventListener('submit', onSubmitTestimoni);
   const items = (await getAllTestimoni()).filter(t=> t.status !== 'pending');
   const listEl = document.getElementById('testimoniList');
   if(items.length===0){ listEl.innerHTML = `<div class="empty">Belum ada testimoni.</div>`; return; }
@@ -1197,6 +1172,63 @@ async function renderTestimoniPublic(){
       <div class="eyebrow">${(t.nama||'Pelanggan').replace(/</g,'&lt;')}${t.acara ? ' · '+t.acara.replace(/</g,'&lt;') : ''}</div>
     </div>
   `).join('');
+}
+function openTestimoniModal(){
+  if(document.getElementById('testimoniModalOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'testimoniModalOverlay';
+  overlay.className = 'testimoni-modal-overlay';
+  overlay.innerHTML = `
+    <div class="testimoni-modal-box">
+      <button type="button" class="testimoni-modal-close" onclick="closeTestimoniModal()">✕</button>
+      <div class="pass-head">
+        <span class="eyebrow">Beri Testimoni</span>
+      </div>
+      <div class="pass-body">
+        <form id="testimoniForm" class="form-grid" novalidate>
+          <div>
+            <label>Nama</label>
+            <input type="text" id="tf_nama" placeholder="Nama lengkap">
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" id="tf_email" placeholder="nama@email.com">
+          </div>
+          <div>
+            <label>Nama Acara (opsional)</label>
+            <input type="text" id="tf_acara" placeholder="Contoh: Akad Nikah, Wisuda, Seminar">
+          </div>
+          <div>
+            <label>Rating</label>
+            <select id="tf_rating">
+              <option value="5">5 Bintang</option>
+              <option value="4">4 Bintang</option>
+              <option value="3">3 Bintang</option>
+              <option value="2">2 Bintang</option>
+              <option value="1">1 Bintang</option>
+            </select>
+          </div>
+          <div>
+            <label>Testimoni</label>
+            <textarea id="tf_isi" rows="3" placeholder="Ceritakan pengalaman Anda..."></textarea>
+          </div>
+          <div>
+            <label>Kritik &amp; Saran</label>
+            <textarea id="tf_kritik" rows="3" placeholder="Kritik dan saran untuk kami..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top:6px;">Kirim Testimoni</button>
+        </form>
+        <p class="foot-note">Testimoni akan ditinjau oleh admin sebelum ditampilkan di halaman ini. Kritik &amp; saran hanya akan diterima oleh admin dan tidak ditampilkan secara publik.</p>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (ev)=>{ if(ev.target === overlay) closeTestimoniModal(); });
+  document.body.appendChild(overlay);
+  document.getElementById('testimoniForm').addEventListener('submit', onSubmitTestimoni);
+}
+function closeTestimoniModal(){
+  const overlay = document.getElementById('testimoniModalOverlay');
+  if(overlay) overlay.remove();
 }
 async function onSubmitTestimoni(e){
   e.preventDefault();
@@ -1214,12 +1246,12 @@ async function onSubmitTestimoni(e){
   try{
     await sSet('testimoni:'+id, { id, nama, email, acara, rating, isi, kritikSaran, status:'pending', createdAt: Date.now() });
     toast('Terima kasih! Testimoni Anda akan ditinjau oleh admin sebelum ditampilkan.');
-    e.target.reset();
+    closeTestimoniModal();
   }catch(err){
     console.error('Gagal mengirim testimoni', err);
     toast('Gagal mengirim testimoni. Silakan coba lagi.');
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Kirim Testimoni'; }
   }
-  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Kirim Testimoni'; }
 }
 
 /* ============ GALLERY (PUBLIK) ============ */
