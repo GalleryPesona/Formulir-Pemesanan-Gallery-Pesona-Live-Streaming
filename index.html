@@ -1133,11 +1133,20 @@ function pubCalNav(dir){
   drawPublicCalendar(window._pubCalBookings || []);
 }
 function showPublicDayInfo(dateStr){
-  const items = (window._pubCalBookings||[]).filter(b=>b.tanggal===dateStr);
+  const items = (window._pubCalBookings||[]).filter(b=>b.tanggal===dateStr)
+    .slice()
+    .sort((a,b)=> (a.jamEvent||'').localeCompare(b.jamEvent||''));
+  const jadwalRows = items.map(b=>`
+    <div style="display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line);">
+      <span>⏰ Jam <b>${b.jamEvent || '-'}</b></span>
+      <span style="color:var(--muted); font-size:13px;">${b.isiEvent || 'Acara'}</span>
+    </div>
+  `).join('');
   document.getElementById('pubDayInfo').innerHTML = `
     <div class="empty" style="border-color:var(--gold); color:var(--ivory);">
-      Tanggal <b>${fmtDate(dateStr)}</b> sudah ada ${items.length} jadwal acara.<br>
-      <span style="color:var(--muted); font-size:13px;">Silakan hubungi admin (${formatWaDisplay(ADMIN_WA_NUMBER)}) untuk memastikan ketersediaan jam pada tanggal ini.</span>
+      Tanggal <b>${fmtDate(dateStr)}</b> sudah ada ${items.length} jadwal acara:<br>
+      <div style="margin:10px 0;">${jadwalRows}</div>
+      <span style="color:var(--muted); font-size:13px;">Silakan hubungi admin (${formatWaDisplay(ADMIN_WA_NUMBER)}) untuk memastikan ketersediaan jam lain pada tanggal ini.</span>
     </div>
   `;
 }
